@@ -1,0 +1,201 @@
+import type { CSSProperties, RefObject } from 'react'
+import { Bus, PersonSimpleWalk, Question, Subway, Train } from '@phosphor-icons/react'
+import type { JourneyResponse, JourneyStatus } from '../types/journey'
+import {
+  formatJourneyDuration,
+  formatLineName,
+  getLineColor,
+  getRouteIconKind,
+} from './route-flow'
+
+interface JourneyAnswerProps {
+  response: JourneyResponse
+  answerRef?: RefObject<HTMLElement | null>
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat('en-GB', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value))
+}
+
+function formatStatus(status: JourneyStatus) {
+  return {
+    viable: 'Looks viable',
+    tight: 'Tight margin',
+    not_viable: 'Not viable',
+    unable_to_verify: 'Unable to verify',
+  }[status]
+}
+
+function formatEvidenceAge(ageSeconds: number | null) {
+  if (ageSeconds === null) return 'age unavailable'
+  if (ageSeconds < 60) return 'less than a minute old'
+  const minutes = Math.round(ageSeconds / 60)
+  return `${minutes} minute${minutes === 1 ? '' : 's'} old`
+}
+
+function formatEvidenceSource(source: string) {
+  return source
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    .replace(/^Tfl\b/, 'TfL')
+}
+
+function formatMode(mode: string) {
+  return mode === 'tube' ? 'Tube' : mode === 'walk' ? 'Walk' : mode
+}
+
+function formatLegLabel(mode: string, lineName?: string) {
+  if (mode === 'tube' && lineName) return `Tube: ${formatLineName(lineName)}`
+  return formatMode(mode)
+}
+
+function RouteLegIcon({ mode }: { mode: string }) {
+  switch (getRouteIconKind(mode)) {
+    case 'walk':
+      return <PersonSimpleWalk aria-hidden="true" size={26} weight="regular" />
+    case 'tube':
+      return <Subway aria-hidden="true" size={26} weight="regular" />
+    case 'bus':
+      return <Bus aria-hidden="true" size={26} weight="regular" />
+    case 'rail':
+      return <Train aria-hidden="true" size={26} weight="regular" />
+    default:
+      return <Question aria-hidden="true" size={26} weight="regular" />
+  }
+}
+
+export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
+  const route = response.route
+
+  return (
+    <section
+      ref={answerRef}
+      className={`answer answer-${response.status}`}
+      aria-labelledby="answer-title"
+      aria-live="polite"
+      tabIndex={-1}
+    >
+      <div className="answer-heading">
+        <div>
+          <p className="eyebrow">Your answer</p>
+          <h2 id="answer-title">{formatStatus(response.status)}</h2>
+        </div>
+        <span className={`data-mode data-mode-${response.dataMode}`}>
+          {response.dataMode} data
+        </span>
+      </div>
+      <p className="answer-summary">{response.summary}</p>
+
+      {route && route.legs.length > 0 && (
+        <div className="route-summary">
+          <div className="route-heading">
+            <strong>How to get there</strong>
+            <div className="route-heading-meta">
+              <span>{route.walkingMinutes ?? 0} minutes walking</span>
+              <span className="route-total">
+                Estimated total{' '}
+                <strong>
+                  {formatJourneyDuration(route.legs[0]?.departureAt ?? '', route.arrivalAt)}
+                </strong>
+              </span>
+            </div>
+          </div>
+          <ol className="route-flow" aria-label="Journey route">
+            {route.legs.map((leg, index) => {
+              const lineColor = getLineColor(leg.lineName)
+              return (
+                <li
+                  className={`route-flow__step route-flow__step--${leg.mode}`}
+                  key={`${leg.departureAt}-${leg.arrivalAt}-${leg.from}`}
+                  style={{ '--route-line-color': lineColor } as CSSProperties}
+                >
+                  <div className="route-flow__visual" aria-hidden="true">
+                    <span className="route-flow__icon">
+                      <RouteLegIcon mode={leg.mode} />
+                    </span>
+                    {index < route.legs.length - 1 && (
+                      <span className="route-flow__connector" />
+                    )}
+                  </div>
+                  <div className="route-flow__detail">
+                    <div className="route-step-heading">
+                      <div className="route-step-mode">
+                        <strong>{formatLegLabel(leg.mode, leg.lineName)}</strong>
+                        {leg.mode === 'tube' && leg.lineName && (
+                          <span
+                            className="route-line-key"
+                            role="img"
+                            aria-label={`${formatLineName(leg.lineName)} colour`}
+                          />
+                        )}
+                      </div>
+                      <span>{leg.durationMinutes} minutes</span>
+                    </div>
+                    <p>
+                      {leg.from} <span aria-hidden="true">→</span> {leg.to}
+                    </p>
+                    <small>
+                      {formatDateTime(leg.departureAt)} to {formatDateTime(leg.arrivalAt)}
+                    </small>
+                  </div>
+                </li>
+              )
+            })}
+          </ol>
+        </div>
+      )}
+
+      {response.margin && route && (
+        <dl className="answer-facts">
+          <div>
+            <dt>Expected arrival</dt>
+          <dd>{formatDateTime(route.arrivalAt)}</dd>
+          </div>
+          <div>
+            <dt>Margin after buffer</dt>
+            <dd>{Math.round(response.margin.remainingAfterBufferMinutes)} minutes</dd>
+          </div>
+          <div>
+            <dt>Checked</dt>
+            <dd>{formatDateTime(response.checkedAt)}</dd>
+          </div>
+        </dl>
+      )}
+
+      <div className="next-action">
+        <strong>Next action</strong>
+        <p>{response.nextAction}</p>
+      </div>
+
+      <p className="station-only-note">{response.stationOnlyWarning}</p>
+
+      {response.evidence.length > 0 && (
+        <div className="evidence-list">
+          <strong>Evidence freshness</strong>
+          <ul>
+            {response.evidence.map((item) => (
+              <li key={`${item.source}-${item.capturedAt}`}>
+                <span>{formatEvidenceSource(item.source)}</span>
+                <small>{formatEvidenceAge(item.ageSeconds)}</small>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {response.warnings.length > 0 && (
+        <div className="warning-list">
+          <strong>Keep in mind</strong>
+          <ul>
+            {response.warnings.map((warning) => (
+              <li key={warning}>{warning}</li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section>
+  )
+}

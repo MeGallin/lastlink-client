@@ -1,0 +1,20 @@
+{
+  "name": "lastlink",
+  "short_name": "lastlink",
+  "description": "Check whether you can reach a TfL station in time.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#121719",
+  "theme_color": "#121719",
+  "lang": "en-GB",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
