@@ -1,35 +1,18 @@
 :root {
-  color-scheme: dark light;
-  --page: #111315;
-  --surface: #191c20;
-  --surface-raised: #22262b;
-  --line: #3a4048;
-  --text: #eef1f4;
-  --muted: #aab1ba;
-  --quiet: #7c858f;
-  --accent: #c8cfd8;
-  --accent-strong: #16191d;
-  --warning: #b7c0ca;
-  --danger: #e7a09a;
+  color-scheme: light;
+  --page: #ffffff;
+  --surface: #ffffff;
+  --surface-raised: #f1f3f6;
+  --line: #c8cfd7;
+  --text: #18212a;
+  --muted: #4b5864;
+  --quiet: #687580;
+  --accent: #4b5864;
+  --accent-strong: #ffffff;
+  --warning: #765b16;
+  --danger: #a33a32;
   --radius: 0.75rem;
-  --shadow: 0 1.25rem 3rem rgb(0 0 0 / 0.18);
-}
-
-@media (prefers-color-scheme: light) {
-  :root {
-    --page: #eef0f2;
-    --surface: #ffffff;
-    --surface-raised: #e6e9ed;
-    --line: #c7cdd4;
-    --text: #1c2024;
-    --muted: #56606a;
-    --quiet: #707983;
-    --accent: #4c5662;
-    --accent-strong: #ffffff;
-    --warning: #616c78;
-    --danger: #a13931;
-    --shadow: 0 1.25rem 3rem rgb(20 25 30 / 0.1);
-  }
+  --shadow: 0 1.25rem 3rem rgb(20 25 30 / 0.1);
 }
 
 * {
@@ -469,7 +452,9 @@ h2 {
 .route-flow__step--tube .route-flow__connector {
   width: 0.34rem;
   background: var(--route-line-color);
-  box-shadow: 0 0 0 1px var(--surface-raised);
+  box-shadow:
+    0 0 0 1px var(--surface),
+    0 0 0 2px color-mix(in srgb, var(--route-line-color) 45%, var(--line));
 }
 
 .route-flow__step--walk .route-flow__connector {

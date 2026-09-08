@@ -35,7 +35,8 @@ function App() {
           <p className="intro-copy">
             Start with a Tube station, London address or landmark. Choose the
             station you need to reach and we will check whether the configured
-            TfL source can get you there by your deadline.
+            TfL source can get you there by your deadline. The route may use
+            Tube, bus, rail or walking.
           </p>
         </section>
 

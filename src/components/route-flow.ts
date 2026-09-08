@@ -1,5 +1,7 @@
 export type RouteIconKind = 'walk' | 'tube' | 'bus' | 'rail' | 'other'
 
+export type RouteDisplayMode = RouteIconKind | 'overground'
+
 const lineColors: Record<string, string> = {
   bakerloo: '#b26300',
   central: '#e32017',
@@ -29,8 +31,24 @@ export function getLineColor(lineName?: string) {
   return (key && lineColors[key]) || 'var(--accent)'
 }
 
-export function getRouteIconKind(mode: string): RouteIconKind {
-  switch (mode.trim().toLowerCase()) {
+export function getRouteDisplayMode(
+  mode: string,
+  lineName?: string,
+): RouteDisplayMode {
+  const normalizedMode = mode.trim().toLowerCase()
+  if (normalizedMode !== 'other') return getKnownRouteDisplayMode(normalizedMode)
+
+  const normalizedLineName = lineName?.trim().toLowerCase() ?? ''
+  const lineKey = normalizedLineName.replace(/\s+line$/, '')
+  if (lineKey && lineColors[lineKey]) return 'tube'
+  if (/\b(bus|coach)\b/.test(normalizedLineName)) return 'bus'
+  if (/\b(overground|dlr)\b/.test(normalizedLineName)) return 'overground'
+  if (/\b(rail|train)\b/.test(normalizedLineName)) return 'rail'
+  return 'other'
+}
+
+function getKnownRouteDisplayMode(mode: string): RouteDisplayMode {
+  switch (mode) {
     case 'walk':
       return 'walk'
     case 'tube':
@@ -38,11 +56,42 @@ export function getRouteIconKind(mode: string): RouteIconKind {
     case 'bus':
       return 'bus'
     case 'rail':
-    case 'overground':
       return 'rail'
+    case 'overground':
+      return 'overground'
     default:
       return 'other'
   }
+}
+
+export function formatRouteMode(mode: string, lineName?: string) {
+  const displayMode = getRouteDisplayMode(mode, lineName)
+  return displayMode === 'tube'
+    ? 'Tube'
+    : displayMode === 'walk'
+      ? 'Walk'
+      : displayMode === 'bus'
+        ? 'Bus'
+        : displayMode === 'rail'
+          ? 'Rail'
+          : displayMode === 'overground'
+            ? 'Overground'
+            : 'Other'
+}
+
+export function formatRouteService(mode: string, lineName?: string) {
+  const serviceName = lineName?.trim()
+  if (!serviceName) return formatRouteMode(mode)
+  return `${formatRouteMode(mode, serviceName)}: ${
+    getRouteDisplayMode(mode, serviceName) === 'tube'
+      ? formatLineName(serviceName)
+      : serviceName
+  }`
+}
+
+export function getRouteIconKind(mode: string, lineName?: string): RouteIconKind {
+  const displayMode = getRouteDisplayMode(mode, lineName)
+  return displayMode === 'overground' ? 'rail' : displayMode
 }
 
 export function formatJourneyDuration(departureAt: string, arrivalAt: string) {

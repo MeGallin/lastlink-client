@@ -2,7 +2,10 @@ import assert from 'node:assert/strict'
 import {
   formatLineName,
   formatJourneyDuration,
+  formatRouteMode,
+  formatRouteService,
   getLineColor,
+  getRouteDisplayMode,
   getRouteIconKind,
 } from '../src/components/route-flow.ts'
 
@@ -16,6 +19,17 @@ assert.equal(getRouteIconKind('bus'), 'bus')
 assert.equal(getRouteIconKind('rail'), 'rail')
 assert.equal(getRouteIconKind('overground'), 'rail')
 assert.equal(getRouteIconKind('other'), 'other')
+assert.equal(getRouteDisplayMode('other', 'Jubilee'), 'tube')
+assert.equal(getRouteDisplayMode('other', 'Express bus A8'), 'bus')
+assert.equal(getRouteDisplayMode('overground'), 'overground')
+assert.equal(getRouteDisplayMode('other', 'London Overground'), 'overground')
+assert.equal(formatRouteMode('overground'), 'Overground')
+assert.equal(getRouteIconKind('other', 'Express bus A8'), 'bus')
+assert.equal(formatRouteMode('other', 'Express bus A8'), 'Bus')
+assert.equal(
+  formatRouteService('other', 'Express bus A8'),
+  'Bus: Express bus A8',
+)
 assert.equal(
   formatJourneyDuration('2026-09-08T20:28:00Z', '2026-09-08T20:55:00Z'),
   '27 min 00 sec',

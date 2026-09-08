@@ -4,7 +4,9 @@ import type { JourneyResponse, JourneyStatus } from '../types/journey'
 import {
   formatJourneyDuration,
   formatLineName,
+  formatRouteService,
   getLineColor,
+  getRouteDisplayMode,
   getRouteIconKind,
 } from './route-flow'
 
@@ -43,17 +45,8 @@ function formatEvidenceSource(source: string) {
     .replace(/^Tfl\b/, 'TfL')
 }
 
-function formatMode(mode: string) {
-  return mode === 'tube' ? 'Tube' : mode === 'walk' ? 'Walk' : mode
-}
-
-function formatLegLabel(mode: string, lineName?: string) {
-  if (mode === 'tube' && lineName) return `Tube: ${formatLineName(lineName)}`
-  return formatMode(mode)
-}
-
-function RouteLegIcon({ mode }: { mode: string }) {
-  switch (getRouteIconKind(mode)) {
+function RouteLegIcon({ mode, lineName }: { mode: string; lineName?: string }) {
+  switch (getRouteIconKind(mode, lineName)) {
     case 'walk':
       return <PersonSimpleWalk aria-hidden="true" size={26} weight="regular" />
     case 'tube':
@@ -106,15 +99,16 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
           <ol className="route-flow" aria-label="Journey route">
             {route.legs.map((leg, index) => {
               const lineColor = getLineColor(leg.lineName)
+              const displayMode = getRouteDisplayMode(leg.mode, leg.lineName)
               return (
                 <li
-                  className={`route-flow__step route-flow__step--${leg.mode}`}
+                  className={`route-flow__step route-flow__step--${displayMode}`}
                   key={`${leg.departureAt}-${leg.arrivalAt}-${leg.from}`}
                   style={{ '--route-line-color': lineColor } as CSSProperties}
                 >
                   <div className="route-flow__visual" aria-hidden="true">
                     <span className="route-flow__icon">
-                      <RouteLegIcon mode={leg.mode} />
+                      <RouteLegIcon mode={leg.mode} lineName={leg.lineName} />
                     </span>
                     {index < route.legs.length - 1 && (
                       <span className="route-flow__connector" />
@@ -123,8 +117,8 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
                   <div className="route-flow__detail">
                     <div className="route-step-heading">
                       <div className="route-step-mode">
-                        <strong>{formatLegLabel(leg.mode, leg.lineName)}</strong>
-                        {leg.mode === 'tube' && leg.lineName && (
+                        <strong>{formatRouteService(leg.mode, leg.lineName)}</strong>
+                        {displayMode === 'tube' && leg.lineName && (
                           <span
                             className="route-line-key"
                             role="img"
