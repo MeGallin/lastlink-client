@@ -17,6 +17,10 @@ The client provides one focused flow:
 
 The UI deliberately says when the result is station-only. It does not verify
 an onward National Rail service or promise that a traveller will board it.
+If the selected station route contains a National Rail leg, the answer shows a
+fare-eligibility warning; LastLink does not check tickets, fares, Railcards or
+payment eligibility. The API prefers Tube/walking routes, then buses, before
+using rail when the non-rail alternatives are not viable.
 Station display names are paired with explicit TfL StopPoint IDs before the
 request is sent, preventing ambiguous name-only Journey Planner requests. A
 free-form origin is sent as a name only so the provider can resolve it; the

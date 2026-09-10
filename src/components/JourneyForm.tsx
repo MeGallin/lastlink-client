@@ -64,6 +64,14 @@ export function JourneyForm({ onResponse, onRequestStart }: JourneyFormProps) {
       return
     }
 
+    if (originStation?.id === destination.id) {
+      showValidationError(
+        'Your starting point and destination are the same. Choose a different destination station.',
+        'destination',
+      )
+      return
+    }
+
     if (!arriveBy || Number.isNaN(date.getTime())) {
       showValidationError('Add a valid arrival time.', 'arriveBy')
       return

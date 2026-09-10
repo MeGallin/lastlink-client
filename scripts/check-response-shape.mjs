@@ -25,10 +25,20 @@ const validResponse = {
       {
         mode: 'tube',
         lineName: 'Jubilee',
+        directions: ['Towards Stanmore'],
         from: 'Stratford Underground Station',
+        fromTflStopPointId: '940GZZLUSTD',
         to: 'Waterloo Underground Station',
+        toTflStopPointId: '940GZZLUWLO',
         departureAt: '2026-09-08T18:25:00+01:00',
         arrivalAt: '2026-09-08T18:40:00+01:00',
+        scheduledDepartureAt: '2026-09-08T18:24:00+01:00',
+        scheduledArrivalAt: '2026-09-08T18:39:00+01:00',
+        instructions: {
+          summary: 'Take the Jubilee line',
+          detailed: 'Follow signs for the Jubilee line towards Stanmore.',
+          steps: ['Use the westbound platform.'],
+        },
         durationMinutes: 15,
       },
     ],
@@ -71,5 +81,30 @@ assert.equal(isJourneyResponse(offsetFreeTimestamp), false)
 const impossibleCalendarDate = structuredClone(validResponse)
 impossibleCalendarDate.checkedAt = '2026-02-30T18:00:00+00:00'
 assert.equal(isJourneyResponse(impossibleCalendarDate), false)
+
+const malformedDirections = structuredClone(validResponse)
+malformedDirections.route.legs[0].directions = ['']
+assert.equal(isJourneyResponse(malformedDirections), false)
+
+const malformedStopPointId = structuredClone(validResponse)
+malformedStopPointId.route.legs[0].toTflStopPointId = '  '
+assert.equal(isJourneyResponse(malformedStopPointId), false)
+
+const malformedSchedule = structuredClone(validResponse)
+malformedSchedule.route.legs[0].scheduledArrivalAt = 'not-a-date'
+assert.equal(isJourneyResponse(malformedSchedule), false)
+
+const reversedSchedule = structuredClone(validResponse)
+reversedSchedule.route.legs[0].scheduledDepartureAt = '2026-09-08T18:40:00+01:00'
+reversedSchedule.route.legs[0].scheduledArrivalAt = '2026-09-08T18:39:00+01:00'
+assert.equal(isJourneyResponse(reversedSchedule), false)
+
+const malformedInstructions = structuredClone(validResponse)
+malformedInstructions.route.legs[0].instructions = { steps: [] }
+assert.equal(isJourneyResponse(malformedInstructions), false)
+
+const malformedFareWarning = structuredClone(validResponse)
+malformedFareWarning.route.fareWarning = ' '
+assert.equal(isJourneyResponse(malformedFareWarning), false)
 
 console.log('Response-shape guard passed: valid and malformed payloads covered')

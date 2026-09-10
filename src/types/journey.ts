@@ -24,13 +24,24 @@ export interface JourneyResponse {
   route: {
     arrivalAt: string
     walkingMinutes?: number
+    fareWarning?: string
     legs: Array<{
       mode: string
       lineName?: string
+      directions?: string[]
       from: string
+      fromTflStopPointId?: string
       to: string
+      toTflStopPointId?: string
       departureAt: string
       arrivalAt: string
+      scheduledDepartureAt?: string
+      scheduledArrivalAt?: string
+      instructions?: {
+        summary?: string
+        detailed?: string
+        steps?: string[]
+      }
       durationMinutes: number
     }>
   } | null

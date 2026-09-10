@@ -2,15 +2,115 @@ import assert from 'node:assert/strict'
 import {
   formatLineName,
   formatJourneyDuration,
+  formatRouteDirection,
+  formatRouteDirectionText,
   formatRouteMode,
   formatRouteService,
   getLineColor,
+  getRouteChange,
   getRouteDisplayMode,
   getRouteIconKind,
+  providerScheduleMatchesItinerary,
 } from '../src/components/route-flow.ts'
 
 assert.equal(formatLineName('Jubilee'), 'Jubilee line')
 assert.equal(formatLineName('Jubilee line'), 'Jubilee line')
+assert.equal(
+  formatRouteDirection('Stanmore Underground Station'),
+  'Stanmore Underground Station',
+)
+assert.equal(formatRouteDirection('Towards Stanmore'), 'Towards Stanmore')
+assert.equal(formatRouteDirection('westbound'), 'westbound')
+assert.equal(formatRouteDirection('via Baker Street'), 'via Baker Street')
+assert.equal(
+  formatRouteDirectionText(
+    ['Stanmore Underground Station'],
+    'Jubilee line towards Stanmore',
+  ),
+  'Jubilee line towards Stanmore',
+)
+assert.equal(
+  formatRouteDirectionText(
+    ['Stanmore Underground Station'],
+    'Jubilee line to Waterloo',
+  ),
+  'Stanmore Underground Station',
+)
+assert.equal(formatRouteDirectionText(['westbound']), 'westbound')
+assert.equal(formatRouteDirectionText(undefined, 'Take the Jubilee line'), undefined)
+
+const northernViaBank = {
+  mode: 'tube',
+  lineName: 'Northern',
+  directions: ['Northern line towards High Barnet Station via Bank'],
+  from: 'Stockwell Underground Station',
+  to: 'Kennington Underground Station',
+}
+const northernViaCharingCross = {
+  mode: 'tube',
+  lineName: 'Northern line',
+  directions: ['Northern line towards High Barnet Station via Charing Cross'],
+  from: 'Kennington Underground Station',
+  to: 'Waterloo Underground Station',
+}
+const branchChange = getRouteChange(northernViaBank, northernViaCharingCross)
+assert.equal(branchChange?.kind, 'branch')
+assert.equal(branchChange?.at, 'Kennington Underground Station')
+assert.equal(branchChange?.title, 'Change trains at Kennington Underground Station')
+assert.equal(
+  branchChange?.description,
+  'Same line, different branch. Get off here and board the next train in the direction shown below.',
+)
+assert.equal(
+  branchChange?.nextDirection,
+  'Northern line towards High Barnet Station via Charing Cross',
+)
+
+const sameDirectionContinuation = getRouteChange(northernViaBank, {
+  ...northernViaCharingCross,
+  directions: northernViaBank.directions,
+})
+assert.equal(sameDirectionContinuation, undefined)
+
+const unknownLineDirectionChange = getRouteChange(
+  { ...northernViaBank, lineName: undefined },
+  { ...northernViaCharingCross, lineName: undefined },
+)
+assert.equal(unknownLineDirectionChange, undefined)
+
+const jubileeAfterNorthern = getRouteChange(northernViaBank, {
+  ...northernViaCharingCross,
+  lineName: 'Jubilee',
+  directions: ['Jubilee line towards Stanmore'],
+})
+assert.equal(jubileeAfterNorthern?.kind, 'line')
+assert.equal(
+  providerScheduleMatchesItinerary(
+    '2026-09-09T10:50:00+01:00',
+    '2026-09-09T10:53:00+01:00',
+    '2026-09-09T10:50:00+01:00',
+    '2026-09-09T10:53:00+01:00',
+  ),
+  true,
+)
+assert.equal(
+  providerScheduleMatchesItinerary(
+    '2026-09-09T10:50:00+01:00',
+    '2026-09-09T10:53:00+01:00',
+    '2026-09-09T10:51:00+01:00',
+    '2026-09-09T10:54:00+01:00',
+  ),
+  false,
+)
+assert.equal(
+  providerScheduleMatchesItinerary(
+    '2026-09-09T10:50:00+01:00',
+    '2026-09-09T10:53:00+01:00',
+    undefined,
+    '2026-09-09T10:53:00+01:00',
+  ),
+  false,
+)
 assert.equal(getLineColor('Jubilee'), '#a0a5a9')
 assert.equal(getLineColor('Jubilee line'), '#a0a5a9')
 assert.equal(getRouteIconKind('walk'), 'walk')

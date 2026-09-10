@@ -59,6 +59,9 @@ function isRoute(value: unknown) {
   ) {
     return false
   }
+  if (value.fareWarning !== undefined && !isNonEmptyText(value.fareWarning)) {
+    return false
+  }
   return Array.isArray(value.legs) && value.legs.every(isRouteLeg)
 }
 
@@ -71,8 +74,57 @@ function isRouteLeg(value: unknown) {
     isDateString(value.departureAt) &&
     isDateString(value.arrivalAt) &&
     isFiniteNonNegativeNumber(value.durationMinutes) &&
-    (value.lineName === undefined || typeof value.lineName === 'string')
+    (value.lineName === undefined || typeof value.lineName === 'string') &&
+    isOptionalStopPointId(value.fromTflStopPointId) &&
+    isOptionalStopPointId(value.toTflStopPointId) &&
+    isOptionalTextList(value.directions) &&
+    isOptionalSchedule(value.scheduledDepartureAt, value.scheduledArrivalAt) &&
+    isOptionalInstructions(value.instructions)
   )
+}
+
+function isOptionalStopPointId(value: unknown) {
+  return value === undefined || isNonEmptyText(value)
+}
+
+function isOptionalTextList(value: unknown) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.length > 0 &&
+      value.every((item) => typeof item === 'string' && item.trim() !== ''))
+  )
+}
+
+function isOptionalSchedule(departureAt: unknown, arrivalAt: unknown) {
+  if (
+    (departureAt !== undefined && !isDateString(departureAt)) ||
+    (arrivalAt !== undefined && !isDateString(arrivalAt))
+  ) {
+    return false
+  }
+  if (departureAt === undefined || arrivalAt === undefined) return true
+  return Date.parse(arrivalAt as string) >= Date.parse(departureAt as string)
+}
+
+function isOptionalInstructions(value: unknown) {
+  if (value === undefined) return true
+  if (!isRecord(value)) return false
+
+  const hasSummary = value.summary !== undefined
+  const hasDetailed = value.detailed !== undefined
+  const hasSteps = value.steps !== undefined
+  if (!hasSummary && !hasDetailed && !hasSteps) return false
+
+  return (
+    (!hasSummary || isNonEmptyText(value.summary)) &&
+    (!hasDetailed || isNonEmptyText(value.detailed)) &&
+    (!hasSteps || isOptionalTextList(value.steps))
+  )
+}
+
+function isNonEmptyText(value: unknown) {
+  return typeof value === 'string' && value.trim() !== ''
 }
 
 function isMargin(value: unknown) {

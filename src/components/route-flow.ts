@@ -2,6 +2,27 @@ export type RouteIconKind = 'walk' | 'tube' | 'bus' | 'rail' | 'other'
 
 export type RouteDisplayMode = RouteIconKind | 'overground'
 
+export type RouteLeg = {
+  mode: string
+  lineName?: string
+  directions?: string[]
+  from: string
+  to: string
+  instructions?: {
+    detailed?: string
+  }
+}
+
+export type RouteChangeKind = 'branch' | 'line' | 'mode'
+
+export interface RouteChange {
+  kind: RouteChangeKind
+  at: string
+  title: string
+  description: string
+  nextDirection?: string
+}
+
 const lineColors: Record<string, string> = {
   bakerloo: '#b26300',
   central: '#e32017',
@@ -21,6 +42,119 @@ export function formatLineName(lineName?: string) {
   if (!cleanLineName) return ''
   const suffix = cleanLineName.toLowerCase().endsWith(' line') ? '' : ' line'
   return `${cleanLineName}${suffix}`
+}
+
+export function formatRouteDirection(direction: string) {
+  return direction.trim()
+}
+
+export function formatRouteDirectionText(
+  directions?: string[],
+  detailedInstruction?: string,
+) {
+  const detailed = detailedInstruction?.trim()
+  if (
+    detailed &&
+    /\b(?:towards?|northbound|southbound|eastbound|westbound|via)\b/i.test(
+      detailed,
+    )
+  ) {
+    return detailed
+  }
+
+  const providerDirections = directions?.map(formatRouteDirection).filter(Boolean) ?? []
+  return providerDirections.length > 0 ? providerDirections.join(' · ') : undefined
+}
+
+export function getRouteChange(
+  previousLeg: RouteLeg,
+  nextLeg: RouteLeg,
+): RouteChange | undefined {
+  const previousMode = getRouteDisplayMode(previousLeg.mode, previousLeg.lineName)
+  const nextMode = getRouteDisplayMode(nextLeg.mode, nextLeg.lineName)
+  const previousDirection = formatRouteDirectionText(
+    previousLeg.directions,
+    previousLeg.instructions?.detailed,
+  )
+  const nextDirection = formatRouteDirectionText(
+    nextLeg.directions,
+    nextLeg.instructions?.detailed,
+  )
+  const at = nextLeg.from || previousLeg.to
+
+  if (!at || previousMode === 'walk' || nextMode === 'walk') return undefined
+
+  if (previousMode === 'tube' && nextMode === 'tube') {
+    const previousLine = normalizeLineName(previousLeg.lineName)
+    const nextLine = normalizeLineName(nextLeg.lineName)
+    if (previousLine === '' || nextLine === '') return undefined
+    const sameLine = previousLine !== '' && previousLine === nextLine
+
+    if (
+      sameLine &&
+      previousDirection &&
+      nextDirection &&
+      !sameText(previousDirection, nextDirection)
+    ) {
+      return {
+        kind: 'branch',
+        at,
+        title: `Change trains at ${at}`,
+        description:
+          'Same line, different branch. Get off here and board the next train in the direction shown below.',
+        nextDirection,
+      }
+    }
+
+    if (!sameLine) {
+      return {
+        kind: 'line',
+        at,
+        title: `Change lines at ${at}`,
+        description: `Get off here and follow signs for ${formatRouteService(nextLeg.mode, nextLeg.lineName)}.`,
+        nextDirection,
+      }
+    }
+  }
+
+  if (previousMode !== nextMode) {
+    return {
+      kind: 'mode',
+      at,
+      title: `Change at ${at}`,
+      description: `Get off here and continue by ${formatRouteService(nextLeg.mode, nextLeg.lineName)}.`,
+      nextDirection,
+    }
+  }
+
+  return undefined
+}
+
+function normalizeLineName(lineName?: string) {
+  return lineName?.trim().toLowerCase().replace(/\s+line$/, '') ?? ''
+}
+
+function sameText(first: string, second: string) {
+  return (
+    first.trim().toLowerCase().replace(/\s+/g, ' ') ===
+    second.trim().toLowerCase().replace(/\s+/g, ' ')
+  )
+}
+
+export function providerScheduleMatchesItinerary(
+  departureAt: string,
+  arrivalAt: string,
+  scheduledDepartureAt?: string,
+  scheduledArrivalAt?: string,
+) {
+  if (scheduledDepartureAt === undefined || scheduledArrivalAt === undefined) {
+    return false
+  }
+
+  return (
+    Date.parse(departureAt) === Date.parse(scheduledDepartureAt) &&
+    Date.parse(arrivalAt) === Date.parse(scheduledArrivalAt)
+  )
 }
 
 export function getLineColor(lineName?: string) {
