@@ -43,6 +43,11 @@ const validResponse = {
           { kind: 'disruption', text: 'Minor delays are reported on this leg.' },
           { kind: 'planned_work', text: 'Planned platform works may affect the interchange.' },
         ],
+        stopCount: 3,
+        intermediateStops: [
+          { name: 'West Ham', tflStopPointId: '940GZZLUSWK' },
+          { name: 'North Greenwich', tflStopPointId: '940GZZLUNHG' },
+        ],
         durationMinutes: 15,
       },
     ],
@@ -128,6 +133,18 @@ assert.equal(isJourneyResponse(malformedFareWarning), false)
 const malformedNoticeKind = structuredClone(validResponse)
 malformedNoticeKind.route.legs[0].notices[0].kind = 'information'
 assert.equal(isJourneyResponse(malformedNoticeKind), false)
+
+const malformedStopCount = structuredClone(validResponse)
+malformedStopCount.route.legs[0].stopCount = 0
+assert.equal(isJourneyResponse(malformedStopCount), false)
+
+const mismatchedStationSequence = structuredClone(validResponse)
+mismatchedStationSequence.route.legs[0].intermediateStops.pop()
+assert.equal(isJourneyResponse(mismatchedStationSequence), false)
+
+const walkingStationSequence = structuredClone(validResponse)
+walkingStationSequence.route.legs[0].mode = 'walk'
+assert.equal(isJourneyResponse(walkingStationSequence), false)
 
 const malformedNoticeText = structuredClone(validResponse)
 malformedNoticeText.route.legs[0].notices[0].text = ' '.repeat(3)

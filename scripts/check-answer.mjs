@@ -25,6 +25,10 @@ try {
       legs: [{ mode: 'tube', lineName: 'Jubilee', from: 'Waterloo', to: 'Stratford',
         departureAt: '2026-09-10T23:45:00+01:00', arrivalAt: '2026-09-11T00:15:00+01:00',
         durationMinutes: 30,
+        stopCount: 3,
+        intermediateStops: [{ name: 'Southwark' }, { name: 'London Bridge' }],
+        scheduledDepartureAt: '2026-09-10T23:46:00+01:00',
+        scheduledArrivalAt: '2026-09-11T00:16:00+01:00',
         notices: [{ kind: 'disruption', text: 'Service disrupted.' }, { kind: 'planned_work', text: 'Platform works.' }],
       }],
       alternatives: [{
@@ -41,6 +45,15 @@ try {
   assert.doesNotMatch(html, /best fit/)
   assert.match(html, /Service disrupted/)
   assert.match(html, /Platform works/)
+  assert.match(html, /View service details/)
+  assert.match(html, /route-disclosure-chevron/)
+  assert.match(html, /route-step-details route-step-details--has-notices/)
+  assert.match(html, /Expected journey/)
+  assert.match(html, /Published schedule/)
+  assert.match(html, /3 stops to Stratford/)
+  assert.match(html, /Southwark/)
+  assert.match(html, /Stop 3 · Get off here/)
+  assert.match(html, /Jubilee line station sequence/)
   assert.match(html, /Walking time not supplied/)
   assert.match(html, /assessment above applies to the detailed route below/)
   for (const minutes of [0, 1, 8]) {
@@ -50,6 +63,31 @@ try {
     assert.ok(walkingHtml.includes(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'} walking`))
     assert.doesNotMatch(walkingHtml, /Walking time not supplied/)
   }
+  const walkingInstructions = structuredClone(response)
+  walkingInstructions.route.legs[0] = {
+    ...walkingInstructions.route.legs[0],
+    mode: 'walk',
+    instructions: {
+      summary: 'Walk to the station',
+      detailed: 'Walk to the station',
+      steps: [
+        'for 13 metres',
+        '2 for 14 meters',
+        'on to Station Road, continue for 12 metres',
+        '3 for 1 m',
+      ],
+    },
+  }
+  const walkingInstructionsHtml = renderToStaticMarkup(
+    createElement(JourneyAnswer, { response: walkingInstructions }),
+  )
+  assert.match(walkingInstructionsHtml, /Walking guidance/)
+  assert.match(walkingInstructionsHtml, /route-disclosure-chevron/)
+  assert.match(walkingInstructionsHtml, /About 40 metres of walking in total/)
+  assert.match(walkingInstructionsHtml, /on to Station Road, continue for 12 metres/)
+  assert.doesNotMatch(walkingInstructionsHtml, /Walk 13 metres|Walk 14 metres|Walk 1 metre/)
+  assert.doesNotMatch(walkingInstructionsHtml, /2 for 14 meters|3 for 1 m/)
+  assert.equal(walkingInstructionsHtml.match(/Walk to the station/g)?.length, 1)
   const singleDate = structuredClone(response)
   singleDate.route.alternatives[0].departureAt = '2026-09-12T00:00:00+01:00'
   const sameDayHtml = renderToStaticMarkup(createElement(JourneyAnswer, { response: singleDate }))

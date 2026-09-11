@@ -2,6 +2,7 @@ import { Fragment, type CSSProperties, type RefObject } from 'react'
 import { ArrowsDownUp, Bus, PersonSimpleWalk, Question, Subway, Train } from '@phosphor-icons/react'
 import type { JourneyResponse, JourneyStatus } from '../types/journey'
 import { EvidenceAge } from './EvidenceAge'
+import { TubeStationSequence } from './TubeStationSequence'
 import { useDisplayClock } from './useDisplayClock'
 import {
   formatJourneyDuration,
@@ -191,6 +192,86 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
                 leg.scheduledDepartureAt,
                 leg.scheduledArrivalAt,
               )
+              const noticeCount = leg.notices?.length ?? 0
+              const hasServiceNotices = noticeCount > 0
+              const serviceDetails = (
+                <>
+                  {leg.notices?.map((notice) => (
+                    <p
+                      className={`route-step-notice route-step-notice--${notice.kind}`}
+                      key={`${notice.kind}-${notice.text}`}
+                      role="note"
+                    >
+                      <strong>
+                        {notice.kind === 'planned_work'
+                          ? 'Planned work'
+                          : 'Service notice'}
+                      </strong>{' '}
+                      {notice.text}
+                    </p>
+                  ))}
+                  <div className="route-step-times">
+                    <div className="route-step-timing">
+                      <span className="route-step-time-label">Expected journey</span>
+                      <span className="route-step-time-value">
+                        <span>
+                          <strong>Leave</strong>{' '}
+                          <time dateTime={leg.departureAt}>
+                            {formatTime(leg.departureAt)}
+                          </time>
+                        </span>
+                        <span aria-hidden="true">·</span>
+                        <span>
+                          <strong>Arrive</strong>{' '}
+                          <time dateTime={leg.arrivalAt}>
+                            {formatTime(leg.arrivalAt)}
+                          </time>
+                        </span>
+                      </span>
+                      <small className="route-step-time-note">
+                        {formatTimingDate(leg.departureAt, leg.arrivalAt)} · TfL Journey Planner estimate
+                      </small>
+                    </div>
+                    {hasScheduledTiming && !scheduleMatchesItinerary && (
+                      <div className="route-step-timing route-step-timing--schedule">
+                        <span className="route-step-time-label">Published schedule</span>
+                        <span className="route-step-time-value">
+                          <span>
+                            <strong>Scheduled</strong>{' '}
+                            {leg.scheduledDepartureAt ? (
+                              <time dateTime={leg.scheduledDepartureAt}>
+                                {formatTime(leg.scheduledDepartureAt)}
+                              </time>
+                            ) : (
+                              'departure not supplied'
+                            )}
+                          </span>
+                          <span aria-hidden="true">·</span>
+                          <span>
+                            {leg.scheduledArrivalAt ? (
+                              <time dateTime={leg.scheduledArrivalAt}>
+                                {formatTime(leg.scheduledArrivalAt)}
+                              </time>
+                            ) : (
+                              'arrival not supplied'
+                            )}
+                          </span>
+                        </span>
+                        <small className="route-step-time-note">
+                          {leg.scheduledDepartureAt && leg.scheduledArrivalAt
+                            ? `${formatTimingDate(leg.scheduledDepartureAt, leg.scheduledArrivalAt)} · provider timing, not a live update`
+                            : 'The provider supplied only part of the schedule.'}
+                        </small>
+                      </div>
+                    )}
+                    {hasScheduledTiming && scheduleMatchesItinerary && (
+                      <small className="route-step-time-note route-step-time-note--schedule">
+                        {formatTimingDate(leg.scheduledDepartureAt!, leg.scheduledArrivalAt!)} · provider schedule matches this plan; not a live update
+                      </small>
+                    )}
+                  </div>
+                </>
+              )
               return (
                 <Fragment key={`${leg.departureAt}-${leg.arrivalAt}-${leg.from}`}>
                   {routeChange && (
@@ -233,15 +314,22 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
                           />
                         )}
                       </div>
-                      <span>{leg.durationMinutes} minutes</span>
+                      <span>
+                        {leg.durationMinutes} minutes
+                        {displayMode === 'tube' && leg.stopCount !== undefined
+                          ? ` · ${leg.stopCount} ${leg.stopCount === 1 ? 'stop' : 'stops'}`
+                          : ''}
+                      </span>
                     </div>
                     <p>
                       {leg.from} <span aria-hidden="true">→</span> {leg.to}
                     </p>
                     {displayMode !== 'walk' && directionText && (
                       <p className="route-step-direction">
-                        <span>Direction</span>{' '}
-                        {directionText}
+                        <span className="route-step-direction__label">Direction</span>
+                        <strong className="route-step-direction__value">
+                          {directionText}
+                        </strong>
                       </p>
                     )}
                     {displayMode !== 'walk' && !directionText && instructionText && (
@@ -249,96 +337,55 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
                         <span>Instruction</span> {instructionText}
                       </p>
                     )}
-                    {leg.notices?.map((notice) => (
-                      <p
-                        className={`route-step-notice route-step-notice--${notice.kind}`}
-                        key={`${notice.kind}-${notice.text}`}
-                        role="note"
+                    {displayMode === 'tube' && leg.lineName && leg.stopCount !== undefined && (
+                      <TubeStationSequence
+                        lineName={leg.lineName}
+                        from={leg.from}
+                        to={leg.to}
+                        stopCount={leg.stopCount}
+                        intermediateStops={leg.intermediateStops}
+                      />
+                    )}
+                    {displayMode !== 'walk' ? (
+                      <details
+                        className={`route-step-details${
+                          hasServiceNotices ? ' route-step-details--has-notices' : ''
+                        }`}
                       >
-                        <strong>
-                          {notice.kind === 'planned_work'
-                            ? 'Planned work'
-                            : 'Service notice'}
-                        </strong>{' '}
-                        {notice.text}
-                      </p>
-                    ))}
-                    <div className="route-step-times">
-                      <div className="route-step-timing">
-                        <span className="route-step-time-label">Expected journey</span>
-                        <span className="route-step-time-value">
+                        <summary>
+                          <span className="route-disclosure-chevron" aria-hidden="true" />
                           <span>
-                            <strong>Leave</strong>{' '}
-                            <time dateTime={leg.departureAt}>
-                              {formatTime(leg.departureAt)}
-                            </time>
+                            {hasServiceNotices
+                              ? 'View service details'
+                              : 'View timing details'}
                           </span>
-                          <span aria-hidden="true">·</span>
-                          <span>
-                            <strong>Arrive</strong>{' '}
-                            <time dateTime={leg.arrivalAt}>
-                              {formatTime(leg.arrivalAt)}
-                            </time>
+                          <span className="route-step-details__hint">
+                            {hasServiceNotices
+                              ? `${noticeCount} notice${noticeCount === 1 ? '' : 's'} · expected times`
+                              : 'Expected times & published schedule'}
                           </span>
-                        </span>
-                        <small className="route-step-time-note">
-                          {formatTimingDate(leg.departureAt, leg.arrivalAt)} · TfL Journey Planner estimate
-                        </small>
-                      </div>
-                      {hasScheduledTiming && !scheduleMatchesItinerary && (
-                        <div className="route-step-timing route-step-timing--schedule">
-                          <span className="route-step-time-label">Published schedule</span>
-                          <span className="route-step-time-value">
-                            <span>
-                              <strong>Scheduled</strong>{' '}
-                              {leg.scheduledDepartureAt ? (
-                                <time dateTime={leg.scheduledDepartureAt}>
-                                  {formatTime(leg.scheduledDepartureAt)}
-                                </time>
-                              ) : (
-                                'departure not supplied'
-                              )}
-                            </span>
-                            <span aria-hidden="true">·</span>
-                            <span>
-                              {leg.scheduledArrivalAt ? (
-                                <time dateTime={leg.scheduledArrivalAt}>
-                                  {formatTime(leg.scheduledArrivalAt)}
-                                </time>
-                              ) : (
-                                'arrival not supplied'
-                              )}
-                            </span>
-                          </span>
-                          <small className="route-step-time-note">
-                            {leg.scheduledDepartureAt && leg.scheduledArrivalAt
-                              ? `${formatTimingDate(leg.scheduledDepartureAt, leg.scheduledArrivalAt)} · provider timing, not a live update`
-                              : 'The provider supplied only part of the schedule.'}
-                          </small>
-                        </div>
-                      )}
-                      {hasScheduledTiming && scheduleMatchesItinerary && (
-                        <small className="route-step-time-note route-step-time-note--schedule">
-                          {formatTimingDate(leg.scheduledDepartureAt!, leg.scheduledArrivalAt!)} · provider schedule matches this plan; not a live update
-                        </small>
-                      )}
-                    </div>
+                        </summary>
+                        <div className="route-step-details__content">{serviceDetails}</div>
+                      </details>
+                    ) : (
+                      serviceDetails
+                    )}
                     {showStationInstructions && (
                       <details className="route-step-instructions">
-                        <summary>Show station instructions</summary>
+                        <summary>
+                          <span className="route-disclosure-chevron" aria-hidden="true" />
+                          <span>Show station instructions</span>
+                        </summary>
                         <div className="route-step-instructions__content">
                           {leg.instructions?.summary && (
                             <strong>{leg.instructions.summary}</strong>
                           )}
-                          {leg.instructions?.detailed && (
-                            <p>{leg.instructions.detailed}</p>
-                          )}
+                          {leg.instructions?.detailed &&
+                            leg.instructions.detailed !== leg.instructions.summary && (
+                              <p>{leg.instructions.detailed}</p>
+                            )}
                           {leg.instructions?.steps && (
-                            <ol>
-                              {leg.instructions.steps.map((step) => (
-                                <li key={step}>{step}</li>
-                              ))}
-                            </ol>
+                            <WalkingInstructionSteps steps={leg.instructions.steps} />
                           )}
                         </div>
                       </details>
@@ -402,4 +449,51 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
       )}
     </section>
   )
+}
+
+function WalkingInstructionSteps({ steps }: { steps: string[] }) {
+  const normalizedSteps = steps
+    .map((step) => normalizeWalkingInstruction(step))
+    .filter((step) => step.length > 0)
+  const distanceMetres = normalizedSteps.reduce(
+    (total, step) => total + (extractWalkingDistance(step) ?? 0),
+    0,
+  )
+  const descriptiveSteps = normalizedSteps.filter(
+    (step) => !isDistanceOnlyWalkingInstruction(step),
+  )
+
+  return (
+    <>
+      {distanceMetres > 0 && (
+        <p className="route-step-instructions__distance">
+          <strong>Walking guidance</strong>
+          <span>About {distanceMetres} metres of walking in total.</span>
+        </p>
+      )}
+      {descriptiveSteps.length > 0 && (
+        <ul className="route-step-instructions__list">
+          {descriptiveSteps.map((step, stepIndex) => (
+            <li key={`${stepIndex}-${step}`}>{step}</li>
+          ))}
+        </ul>
+      )}
+    </>
+  )
+}
+
+function normalizeWalkingInstruction(step: string) {
+  return step
+    .replace(/[\u200B\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isDistanceOnlyWalkingInstruction(step: string) {
+  return /^\s*(?:\d+\s+)?for\s+\d+(?:\.\d+)?\s*(?:m|met(?:re|er)s?)\s*$/i.test(step)
+}
+
+function extractWalkingDistance(step: string) {
+  const match = step.match(/\bfor\s+(\d+(?:\.\d+)?)\s*(?:m|met(?:re|er)s?)\b/i)
+  return match === null ? null : Number(match[1])
 }

@@ -58,6 +58,11 @@ export interface JourneyResponse {
         kind: 'disruption' | 'planned_work'
         text: string
       }>
+      stopCount?: number
+      intermediateStops?: Array<{
+        name: string
+        tflStopPointId?: string
+      }>
       durationMinutes: number
     }>
   } | null

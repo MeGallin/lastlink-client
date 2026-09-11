@@ -87,7 +87,34 @@ function isRouteLeg(value: unknown) {
     isOptionalTextList(value.directions) &&
     isOptionalSchedule(value.scheduledDepartureAt, value.scheduledArrivalAt) &&
     isOptionalInstructions(value.instructions) &&
-    isOptionalNotices(value.notices)
+    isOptionalNotices(value.notices) &&
+    isOptionalStationSequence(value.mode, value.stopCount, value.intermediateStops)
+  )
+}
+
+function isOptionalStationSequence(
+  mode: unknown,
+  stopCount: unknown,
+  intermediateStops: unknown,
+) {
+  if (stopCount === undefined && intermediateStops === undefined) return true
+  if (mode !== 'tube' || !isPositiveInteger(stopCount)) return false
+  if (intermediateStops === undefined) return stopCount === 1
+  if (
+    !Array.isArray(intermediateStops) ||
+    intermediateStops.length !== stopCount - 1 ||
+    intermediateStops.length === 0
+  ) {
+    return false
+  }
+  return intermediateStops.every(isStationSequenceStop)
+}
+
+function isStationSequenceStop(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyText(value.name) &&
+    isOptionalStopPointId(value.tflStopPointId)
   )
 }
 
@@ -234,4 +261,8 @@ function isFiniteNumber(value: unknown) {
 
 function isFiniteNonNegativeNumber(value: unknown) {
   return typeof value === 'number' && Number.isFinite(value) && value >= 0
+}
+
+function isPositiveInteger(value: unknown): value is number {
+  return typeof value === 'number' && Number.isInteger(value) && value > 0
 }
