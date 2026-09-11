@@ -62,7 +62,14 @@ function isRoute(value: unknown) {
   if (value.fareWarning !== undefined && !isNonEmptyText(value.fareWarning)) {
     return false
   }
-  return Array.isArray(value.legs) && value.legs.every(isRouteLeg)
+  if (value.alternativeRoute !== undefined && typeof value.alternativeRoute !== 'boolean') {
+    return false
+  }
+  return (
+    Array.isArray(value.legs) &&
+    value.legs.every(isRouteLeg) &&
+    isOptionalAlternatives(value.alternatives)
+  )
 }
 
 function isRouteLeg(value: unknown) {
@@ -79,7 +86,8 @@ function isRouteLeg(value: unknown) {
     isOptionalStopPointId(value.toTflStopPointId) &&
     isOptionalTextList(value.directions) &&
     isOptionalSchedule(value.scheduledDepartureAt, value.scheduledArrivalAt) &&
-    isOptionalInstructions(value.instructions)
+    isOptionalInstructions(value.instructions) &&
+    isOptionalNotices(value.notices)
   )
 }
 
@@ -120,6 +128,56 @@ function isOptionalInstructions(value: unknown) {
     (!hasSummary || isNonEmptyText(value.summary)) &&
     (!hasDetailed || isNonEmptyText(value.detailed)) &&
     (!hasSteps || isOptionalTextList(value.steps))
+  )
+}
+
+function isOptionalNotices(value: unknown) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.length > 0 && value.every(isNotice))
+  )
+}
+
+function isNotice(value: unknown) {
+  if (!isRecord(value)) return false
+  return (
+    (value.kind === 'disruption' || value.kind === 'planned_work') &&
+    typeof value.text === 'string' &&
+    value.text.trim() !== '' &&
+    value.text.length <= 240
+  )
+}
+
+function isOptionalAlternatives(value: unknown) {
+  return (
+    value === undefined ||
+    (Array.isArray(value) && value.length > 0 && value.every(isAlternative))
+  )
+}
+
+function isAlternative(value: unknown) {
+  if (!isRecord(value)) return false
+  return (
+    typeof value.departureAt === 'string' &&
+    typeof value.arrivalAt === 'string' &&
+    isDateString(value.departureAt) &&
+    isDateString(value.arrivalAt) &&
+    Date.parse(value.arrivalAt) >= Date.parse(value.departureAt) &&
+    isFiniteNonNegativeNumber(value.durationMinutes) &&
+    (value.walkingMinutes === undefined ||
+      isFiniteNonNegativeNumber(value.walkingMinutes)) &&
+    isFiniteNumber(value.remainingAfterBufferMinutes) &&
+    Array.isArray(value.segments) &&
+    value.segments.length > 0 &&
+    value.segments.every(isAlternativeSegment)
+  )
+}
+
+function isAlternativeSegment(value: unknown) {
+  return (
+    isRecord(value) &&
+    isNonEmptyText(value.mode) &&
+    (value.lineName === undefined || isNonEmptyText(value.lineName))
   )
 }
 

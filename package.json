@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "check": "npm run check:catalogue && npm run check:response && npm run check:route-flow && npm run typecheck && npm run lint && npm run build",
+    "check": "npm run check:catalogue && npm run check:response && npm run check:route-flow && npm run check:answer && npm run typecheck && npm run lint && npm run build",
+    "check:answer": "node scripts/check-answer.mjs",
     "check:catalogue": "node scripts/check-catalogue.mjs",
     "check:response": "node --experimental-strip-types scripts/check-response-shape.mjs",
     "check:route-flow": "node --experimental-strip-types scripts/check-route-flow.mjs",

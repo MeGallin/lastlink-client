@@ -48,7 +48,7 @@ base path with `VITE_API_BASE_URL` when needed.
 npm run check
 ```
 
-This runs the catalogue, response-shape and route-flow guards, TypeScript
+This runs the catalogue, response-shape, route-flow and rendered-answer guards, TypeScript
 validation, Oxlint and the production build. The PWA manifest and service worker cache
 only the app shell; `/api` responses are never cached because journey evidence
 must remain fresh. The catalogue guard also checks that the captured Tube

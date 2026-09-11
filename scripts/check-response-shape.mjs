@@ -39,7 +39,25 @@ const validResponse = {
           detailed: 'Follow signs for the Jubilee line towards Stanmore.',
           steps: ['Use the westbound platform.'],
         },
+        notices: [
+          { kind: 'disruption', text: 'Minor delays are reported on this leg.' },
+          { kind: 'planned_work', text: 'Planned platform works may affect the interchange.' },
+        ],
         durationMinutes: 15,
+      },
+    ],
+    alternativeRoute: true,
+    alternatives: [
+      {
+        departureAt: '2026-09-08T18:20:00+01:00',
+        arrivalAt: '2026-09-08T18:50:00+01:00',
+        durationMinutes: 30,
+        walkingMinutes: 8,
+        remainingAfterBufferMinutes: 5,
+        segments: [
+          { mode: 'bus', lineName: 'Example bus' },
+          { mode: 'walk' },
+        ],
       },
     ],
   },
@@ -106,5 +124,37 @@ assert.equal(isJourneyResponse(malformedInstructions), false)
 const malformedFareWarning = structuredClone(validResponse)
 malformedFareWarning.route.fareWarning = ' '
 assert.equal(isJourneyResponse(malformedFareWarning), false)
+
+const malformedNoticeKind = structuredClone(validResponse)
+malformedNoticeKind.route.legs[0].notices[0].kind = 'information'
+assert.equal(isJourneyResponse(malformedNoticeKind), false)
+
+const malformedNoticeText = structuredClone(validResponse)
+malformedNoticeText.route.legs[0].notices[0].text = ' '.repeat(3)
+assert.equal(isJourneyResponse(malformedNoticeText), false)
+
+const oversizedNotice = structuredClone(validResponse)
+oversizedNotice.route.legs[0].notices[0].text = 'x'.repeat(241)
+assert.equal(isJourneyResponse(oversizedNotice), false)
+
+const emptyNotices = structuredClone(validResponse)
+emptyNotices.route.legs[0].notices = []
+assert.equal(isJourneyResponse(emptyNotices), false)
+
+const malformedAlternative = structuredClone(validResponse)
+malformedAlternative.route.alternatives[0].arrivalAt = 'not-a-date'
+assert.equal(isJourneyResponse(malformedAlternative), false)
+
+const emptyAlternatives = structuredClone(validResponse)
+emptyAlternatives.route.alternatives = []
+assert.equal(isJourneyResponse(emptyAlternatives), false)
+
+const malformedAlternativeSegments = structuredClone(validResponse)
+malformedAlternativeSegments.route.alternatives[0].segments = []
+assert.equal(isJourneyResponse(malformedAlternativeSegments), false)
+
+const malformedAlternativeFlag = structuredClone(validResponse)
+malformedAlternativeFlag.route.alternativeRoute = 'true'
+assert.equal(isJourneyResponse(malformedAlternativeFlag), false)
 
 console.log('Response-shape guard passed: valid and malformed payloads covered')

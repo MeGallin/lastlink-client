@@ -237,3 +237,17 @@ export function formatJourneyDuration(departureAt: string, arrivalAt: string) {
   const seconds = String(totalSeconds % 60).padStart(2, '0')
   return `${minutes} min ${seconds} sec`
 }
+export function formatAlternativeMargin(minutes: number) {
+  const count = minutes < 0 ? Math.ceil(Math.abs(minutes)) : Math.floor(minutes)
+  const unit = count === 1 ? 'minute' : 'minutes'
+  return minutes < 0
+    ? `${count} ${unit} short of buffer`
+    : `${count} ${unit} after buffer`
+}
+export function formatAlternativeServices(segments: Array<{ mode: string; lineName?: string }>) {
+  const services = segments.filter(segment => segment.mode !== 'walk')
+  if (services.length === 0) return 'Walking only'
+  return services.map(segment => segment.mode === 'tube' && segment.lineName
+    ? formatLineName(segment.lineName)
+    : formatRouteService(segment.mode, segment.lineName)).join(' → ')
+}

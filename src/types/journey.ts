@@ -25,6 +25,18 @@ export interface JourneyResponse {
     arrivalAt: string
     walkingMinutes?: number
     fareWarning?: string
+    alternativeRoute?: boolean
+    alternatives?: Array<{
+      departureAt: string
+      arrivalAt: string
+      durationMinutes: number
+      walkingMinutes?: number
+      remainingAfterBufferMinutes: number
+      segments: Array<{
+        mode: string
+        lineName?: string
+      }>
+    }>
     legs: Array<{
       mode: string
       lineName?: string
@@ -42,6 +54,10 @@ export interface JourneyResponse {
         detailed?: string
         steps?: string[]
       }
+      notices?: Array<{
+        kind: 'disruption' | 'planned_work'
+        text: string
+      }>
       durationMinutes: number
     }>
   } | null

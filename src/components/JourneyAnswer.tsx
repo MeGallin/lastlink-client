@@ -1,8 +1,12 @@
 import { Fragment, type CSSProperties, type RefObject } from 'react'
 import { ArrowsDownUp, Bus, PersonSimpleWalk, Question, Subway, Train } from '@phosphor-icons/react'
 import type { JourneyResponse, JourneyStatus } from '../types/journey'
+import { EvidenceAge } from './EvidenceAge'
+import { useDisplayClock } from './useDisplayClock'
 import {
   formatJourneyDuration,
+  formatAlternativeMargin,
+  formatAlternativeServices,
   formatLineName,
   formatRouteDirectionText,
   formatRouteService,
@@ -55,13 +59,6 @@ function formatStatus(status: JourneyStatus) {
   }[status]
 }
 
-function formatEvidenceAge(ageSeconds: number | null) {
-  if (ageSeconds === null) return 'age unavailable'
-  if (ageSeconds < 60) return 'less than a minute old'
-  const minutes = Math.round(ageSeconds / 60)
-  return `${minutes} minute${minutes === 1 ? '' : 's'} old`
-}
-
 function formatEvidenceSource(source: string) {
   return source
     .replace(/[-_]+/g, ' ')
@@ -86,25 +83,32 @@ function RouteLegIcon({ mode, lineName }: { mode: string; lineName?: string }) {
 
 export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
   const route = response.route
+  const now = useDisplayClock()
+  const departure = Date.parse(route?.legs[0]?.departureAt ?? '')
+  const needsRecheck = (response.status === 'viable' || response.status === 'tight') && now > departure
 
   return (
     <section
       ref={answerRef}
-      className={`answer answer-${response.status}`}
+      className={`answer answer-${needsRecheck ? 'unable_to_verify' : response.status}`}
       aria-labelledby="answer-title"
       aria-live="polite"
       tabIndex={-1}
     >
       <div className="answer-heading">
         <div>
-          <p className="eyebrow">Your answer</p>
-          <h2 id="answer-title">{formatStatus(response.status)}</h2>
+          <p className="eyebrow">Assessment at last check</p>
+          <h2 id="answer-title">{needsRecheck ? 'Recheck before starting' : formatStatus(response.status)}</h2>
         </div>
         <span className={`data-mode data-mode-${response.dataMode}`}>
           {response.dataMode} data
         </span>
       </div>
-      <p className="answer-summary">{response.summary}</p>
+      {needsRecheck && <p className="answer-summary">The planned start time has passed. If you have not started, check a new route. If you are already travelling, this itinerary remains available as a reference.</p>}
+      <p className={needsRecheck ? 'route-timing-note' : 'answer-summary'}>{needsRecheck && 'At the last check: '}{response.summary}</p>
+      <p className="route-timing-note">This is a saved assessment. Times and service conditions are not refreshed automatically.</p>
+      <button type="submit" form="journey-check-form">Check journey again</button>
+      <p className="route-timing-note">Uses the stations, deadline and safety margin currently entered in the form.</p>
 
       {route && route.legs.length > 0 && (
         <div className="route-summary">
@@ -128,6 +132,39 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
             <p className="route-fare-warning" role="note">
               {route.fareWarning}
             </p>
+          )}
+          {route.alternativeRoute && (
+            <p className="route-selection-note" role="note">
+              TfL supplied this as an alternative itinerary. The assessment above
+              explains whether it meets your requirements.
+            </p>
+          )}
+          {route.alternatives && route.alternatives.length > 0 && (
+            <details className="route-alternatives">
+              <summary>Other routes found ({route.alternatives.length})</summary>
+              <p>Compare these itinerary summaries. The assessment above applies to the detailed route below.</p>
+              <ul>
+                {route.alternatives.map((alternative, index) => (
+                  <li
+                    key={`${alternative.departureAt}-${alternative.arrivalAt}-${index}`}
+                  >
+                    <div className="route-alternative-heading">
+                      <strong>{formatAlternativeServices(alternative.segments)}</strong>
+                      <span>{alternative.durationMinutes} minutes total</span>
+                    </div>
+                    <p>
+                      Leave {formatTime(alternative.departureAt)} · arrive{' '}
+                      {formatTime(alternative.arrivalAt)} ·{' '}
+                      {formatAlternativeMargin(alternative.remainingAfterBufferMinutes)}
+                    </p>
+                    <p>{formatTimingDate(alternative.departureAt, alternative.arrivalAt)} · TfL Journey Planner estimate</p>
+                    <p>{alternative.walkingMinutes === undefined
+                      ? 'Walking time not supplied'
+                      : `Includes ${alternative.walkingMinutes} ${alternative.walkingMinutes === 1 ? 'minute' : 'minutes'} walking`}</p>
+                  </li>
+                ))}
+              </ul>
+            </details>
           )}
           <ol className="route-flow" aria-label="Journey route">
             {route.legs.map((leg, index) => {
@@ -212,6 +249,20 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
                         <span>Instruction</span> {instructionText}
                       </p>
                     )}
+                    {leg.notices?.map((notice) => (
+                      <p
+                        className={`route-step-notice route-step-notice--${notice.kind}`}
+                        key={`${notice.kind}-${notice.text}`}
+                        role="note"
+                      >
+                        <strong>
+                          {notice.kind === 'planned_work'
+                            ? 'Planned work'
+                            : 'Service notice'}
+                        </strong>{' '}
+                        {notice.text}
+                      </p>
+                    ))}
                     <div className="route-step-times">
                       <div className="route-step-timing">
                         <span className="route-step-time-label">Expected journey</span>
@@ -320,7 +371,7 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
 
       <div className="next-action">
         <strong>Next action</strong>
-        <p>{response.nextAction}</p>
+        <p>{needsRecheck ? 'Recheck the journey before setting off; the earlier departure advice is no longer current.' : response.nextAction}</p>
       </div>
 
       <p className="station-only-note">{response.stationOnlyWarning}</p>
@@ -332,7 +383,7 @@ export function JourneyAnswer({ response, answerRef }: JourneyAnswerProps) {
             {response.evidence.map((item) => (
               <li key={`${item.source}-${item.capturedAt}`}>
                 <span>{formatEvidenceSource(item.source)}</span>
-                <small>{formatEvidenceAge(item.ageSeconds)}</small>
+                <EvidenceAge key={response.checkedAt} ageSeconds={item.ageSeconds} checkedAt={response.checkedAt} now={now} />
               </li>
             ))}
           </ul>

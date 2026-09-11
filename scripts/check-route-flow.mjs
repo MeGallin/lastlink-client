@@ -1,6 +1,20 @@
 import assert from 'node:assert/strict'
+import { currentEvidenceAge, formatEvidenceAge } from '../src/components/evidence-age.ts'
+
+const captured = '2026-09-10T20:00:00Z'
+const at = Date.parse(captured)
+assert.equal(currentEvidenceAge(10, captured, at + 125000), 135)
+assert.equal(currentEvidenceAge(90, captured, at + 120000), 210)
+assert.equal(currentEvidenceAge(90, captured, at - 60000), 90)
+assert.equal(currentEvidenceAge(null, captured, at + 125000), null)
+assert.equal(formatEvidenceAge(59), 'less than a minute old')
+assert.equal(formatEvidenceAge(60), '1 minute old')
+assert.equal(formatEvidenceAge(125), '2 minutes old')
+assert.equal(formatEvidenceAge(null), 'age unavailable')
 import {
   formatLineName,
+  formatAlternativeServices,
+  formatAlternativeMargin,
   formatJourneyDuration,
   formatRouteDirection,
   formatRouteDirectionText,
@@ -14,6 +28,13 @@ import {
 } from '../src/components/route-flow.ts'
 
 assert.equal(formatLineName('Jubilee'), 'Jubilee line')
+assert.equal(formatAlternativeServices([{ mode: 'walk' }, { mode: 'tube', lineName: 'Jubilee' }, { mode: 'walk' }]), 'Jubilee line')
+assert.equal(formatAlternativeServices([{ mode: 'walk' }]), 'Walking only')
+assert.equal(formatAlternativeServices([{ mode: 'tube', lineName: 'Waterloo & City' }, { mode: 'walk' }, { mode: 'tube', lineName: 'Central' }]), 'Waterloo & City line → Central line')
+assert.equal(formatAlternativeMargin(-0.4), '1 minute short of buffer')
+assert.equal(formatAlternativeMargin(-1.2), '2 minutes short of buffer')
+assert.equal(formatAlternativeMargin(0), '0 minutes after buffer')
+assert.equal(formatAlternativeMargin(1.9), '1 minute after buffer')
 assert.equal(formatLineName('Jubilee line'), 'Jubilee line')
 assert.equal(
   formatRouteDirection('Stanmore Underground Station'),

@@ -24,8 +24,8 @@ function defaultArriveBy() {
 }
 
 export function JourneyForm({ onResponse, onRequestStart }: JourneyFormProps) {
-  const [originName, setOriginName] = useState('Stratford')
-  const [destinationName, setDestinationName] = useState('Waterloo')
+  const [originName, setOriginName] = useState('Waterloo')
+  const [destinationName, setDestinationName] = useState('Stratford')
   const [arriveBy, setArriveBy] = useState(defaultArriveBy)
   const [safetyBufferMinutes, setSafetyBufferMinutes] = useState('5')
   const [error, setError] = useState('')
@@ -121,7 +121,7 @@ export function JourneyForm({ onResponse, onRequestStart }: JourneyFormProps) {
         <p>Keep it simple. You can refine the details later.</p>
       </div>
 
-      <form className="journey-form" onSubmit={handleSubmit} noValidate>
+      <form id="journey-check-form" className="journey-form" onSubmit={handleSubmit} noValidate>
         <div className="field-grid">
           <div className="field">
             <label htmlFor="origin">Starting point</label>
