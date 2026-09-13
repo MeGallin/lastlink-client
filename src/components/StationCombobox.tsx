@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { tubeStations } from '../data/stations'
+import { TextInput } from './ui'
 
 interface StationComboboxProps {
   id: string
@@ -10,7 +11,6 @@ interface StationComboboxProps {
   helpText: string
   describedBy: string
   invalid: boolean
-  allowFreeForm: boolean
   openPickerId: string | null
   onOpen: () => void
   onClose: () => void
@@ -25,7 +25,6 @@ export function StationCombobox({
   helpText,
   describedBy,
   invalid,
-  allowFreeForm,
   openPickerId,
   onOpen,
   onClose,
@@ -39,11 +38,14 @@ export function StationCombobox({
   const matchingStations = useMemo(
     () =>
       normalizedQuery
-        ? tubeStations.filter((station) =>
-            station.name.toLowerCase().includes(normalizedQuery),
-          )
+        ? tubeStations.filter((station) => station.name.toLowerCase().includes(normalizedQuery))
         : tubeStations,
     [normalizedQuery],
+  )
+
+  const pickerOptions = useMemo(
+    () => matchingStations.map((station) => ({ kind: 'station' as const, name: station.name })),
+    [matchingStations],
   )
 
   function openOptions() {
@@ -62,9 +64,9 @@ export function StationCombobox({
       event.preventDefault()
       onOpen()
       setActiveIndex((current) =>
-        matchingStations.length === 0
+        pickerOptions.length === 0
           ? -1
-          : current >= matchingStations.length - 1
+          : current >= pickerOptions.length - 1
             ? 0
             : current + 1,
       )
@@ -75,10 +77,10 @@ export function StationCombobox({
       event.preventDefault()
       onOpen()
       setActiveIndex((current) =>
-        matchingStations.length === 0
+        pickerOptions.length === 0
           ? -1
           : current <= 0
-            ? matchingStations.length - 1
+            ? pickerOptions.length - 1
             : current - 1,
       )
       return
@@ -86,8 +88,8 @@ export function StationCombobox({
 
     if (event.key === 'Enter' && isOpen && activeIndex >= 0) {
       event.preventDefault()
-      const station = matchingStations[activeIndex]
-      if (station) selectStation(station.name)
+      const option = pickerOptions[activeIndex]
+      if (option) selectStation(option.name)
       return
     }
 
@@ -119,7 +121,7 @@ export function StationCombobox({
   return (
     <div className="station-picker">
       <div className="station-picker__control">
-        <input
+        <TextInput
           ref={inputRef}
           id={id}
           role="combobox"
@@ -144,6 +146,20 @@ export function StationCombobox({
           onBlur={handleBlur}
           onKeyDown={handleKeyDown}
         />
+        {value && (
+          <button
+            className="station-picker__clear"
+            type="button"
+            aria-label={`Clear ${label.toLowerCase()}`}
+            onClick={() => {
+              onChange('')
+              openOptions()
+              inputRef.current?.focus()
+            }}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        )}
         <button
           className="station-picker__toggle"
           type="button"
@@ -159,34 +175,33 @@ export function StationCombobox({
 
       {isOpen && (
         <div className="station-picker__popup">
-          {matchingStations.length > 0 ? (
+          {pickerOptions.length > 0 ? (
             <ul
               className="station-picker__options"
               id={listboxId}
               role="listbox"
               aria-label={`${label} suggestions`}
             >
-              {matchingStations.map((station, index) => (
+              {pickerOptions.map((option, index) => (
                 <li
                   aria-posinset={index + 1}
-                  aria-selected={station.name === value}
-                  className={index === activeIndex ? 'is-active' : undefined}
+                  aria-selected={option.name === value}
+                  className={`${index === activeIndex ? 'is-active ' : ''}station-picker__option--${option.kind}`}
                   id={`${listboxId}-option-${index}`}
-                  key={station.id}
+                  key={`${option.kind}-${option.name}`}
                   role="option"
-                  aria-setsize={matchingStations.length}
+                  aria-setsize={pickerOptions.length}
                   onMouseDown={(event) => event.preventDefault()}
                   onMouseEnter={() => setActiveIndex(index)}
-                  onClick={() => selectStation(station.name)}
+                  onClick={() => selectStation(option.name)}
                 >
-                  {station.name}
+                  {option.name}
                 </li>
               ))}
             </ul>
           ) : (
             <p className="station-picker__empty" role="status">
-              No matching Tube stations.
-              {allowFreeForm && ' You can still use this as a London address or landmark.'}
+              No matching Tube stations. Choose a station from the TfL list.
             </p>
           )}
         </div>

@@ -9,10 +9,9 @@ workspace remains the source of truth for project decisions and handoff:
 - Keep increments small, mobile-first, accessible and easy to inspect in VS Code.
 - The current screen checks arrival at a TfL station only. Do not add Darwin or
   National Rail dependencies without an explicit product decision.
-- Submit explicit TfL StopPoint IDs whenever a station is selected from the
-  TfL-derived Tube station catalogue. A free-form origin may be a London
-  address or landmark and is sent as a name only for provider resolution; do
-  not invent or guess an identifier. Current-location coordinates and reverse
+- Submit explicit TfL StopPoint IDs for both locations, selected from the
+  TfL-derived Tube station catalogue. Do not send free-form place text or
+  invent/guess an identifier. Current-location coordinates and reverse
   geocoding require a separate privacy/location decision.
 - Do not commit or push until the Product Owner has inspected the working tree,
   checks have passed, and the independent read-only code-review gate has passed.

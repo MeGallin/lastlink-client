@@ -1,6 +1,41 @@
 :root {
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  color-scheme: light;
+  --font-sans: "Avenir Next", "Segoe UI Variable", "Segoe UI", ui-sans-serif,
+    system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: ui-monospace, "SFMono-Regular", Consolas, "Liberation Mono",
+    monospace;
+
+  --page: #ffffff;
+  --surface: #ffffff;
+  --surface-subtle: #f4f7f9;
+  --surface-emphasis: #e7eef3;
+  --surface-raised: #ffffff;
+  --surface-muted: var(--surface-subtle);
+  --ink: #142632;
+  --ink-muted: #53636e;
+  --ink-quiet: #74838d;
+  --text: var(--ink);
+  --muted: var(--ink-muted);
+  --quiet: var(--ink-quiet);
+  --line: #d4dde3;
+  --line-strong: #97a6b0;
+  --action: #1c3e53;
+  --accent: var(--action);
+  --accent-strong: #ffffff;
+  --focus: #1b75a6;
+  --viable: #1b714b;
+  --tight: #93650a;
+  --warning: var(--tight);
+  --danger: #a33d39;
+  --radius-panel: 1rem;
+  --radius-control: 0.7rem;
+  --radius-pill: 999px;
+  --radius: var(--radius-panel);
+  --shadow: 0 1.25rem 3rem rgb(20 38 50 / 0.09);
+  --motion-fast: 160ms;
+  --motion-standard: 220ms;
+
+  font-family: var(--font-sans);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -8,5 +43,5 @@
 }
 
 html {
-  background: #ffffff;
+  background: var(--page);
 }

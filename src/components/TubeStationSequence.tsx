@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import { getLineColor, formatLineName } from './route-flow'
+import { shortStation } from '../journeys/journey-presentation'
 
 interface StationSequenceStop {
   name: string
@@ -58,16 +59,14 @@ export function TubeStationSequence({
               <span className="tube-sequence__marker" aria-hidden="true" />
               {!isLast && <span className="tube-sequence__rail" aria-hidden="true" />}
               <div className="tube-sequence__stop-detail">
-                <strong>{stop.name}</strong>
+                <strong>{shortStation(stop.name)}</strong>
                 <span>{stationLabel}</span>
               </div>
             </li>
           )
         })}
       </ol>
-      <p className="tube-sequence__note">
-        Planned stops · destination included in count
-      </p>
+      <p className="tube-sequence__note">Planned stops · destination included in count</p>
     </section>
   )
 }

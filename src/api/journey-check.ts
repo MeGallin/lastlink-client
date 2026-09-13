@@ -1,21 +1,29 @@
 import type { StationOption } from '../data/stations'
 import { isJourneyResponse } from './journey-response'
+import { toDeadlineIso } from '../components/journey-time'
 
 export interface JourneyLocation {
   name: string
-  tflStopPointId?: string
+  tflStopPointId: string
 }
 
 const requestTimeoutMs = 20_000
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 
-export async function requestJourneyCheck(input: {
-  destination: StationOption
-  origin: JourneyLocation
-  arriveBy: string
-  safetyBufferMinutes: number
-}) {
+export async function requestJourneyCheck(
+  input: {
+    destination: StationOption
+    origin: JourneyLocation
+    arriveBy: string
+    arriveByAtMs?: number
+    safetyBufferMinutes: number
+  },
+  signal?: AbortSignal,
+) {
   const controller = new AbortController()
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  if (signal?.aborted) controller.abort()
   const timeout = window.setTimeout(() => controller.abort(), requestTimeoutMs)
 
   try {
@@ -29,7 +37,7 @@ export async function requestJourneyCheck(input: {
           name: input.destination.name,
           tflStopPointId: input.destination.id,
         },
-        arriveBy: new Date(input.arriveBy).toISOString(),
+        arriveBy: toDeadlineIso(input.arriveBy, input.arriveByAtMs),
         safetyBufferMinutes: input.safetyBufferMinutes,
       }),
     })
@@ -52,6 +60,7 @@ export async function requestJourneyCheck(input: {
     throw error
   } finally {
     window.clearTimeout(timeout)
+    signal?.removeEventListener('abort', abort)
   }
 }
 
