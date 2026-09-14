@@ -134,8 +134,12 @@ The helper is intended for Windows/XAMPP deployments.
 npm run check
 ```
 
-This runs the catalogue, response-shape, route-flow, active-journey and rendered-answer
-guards, TypeScript validation, Oxlint and the production build. The PWA manifest and
+This runs the catalogue, response-shape, route-flow, active-journey, rendered-answer,
+cold-start and static-host cache-policy guards, TypeScript validation, Oxlint and the
+production build. The generated `dist/.htaccess` applies a no-cache policy to
+`index.html`, `manifest.webmanifest`, `sw.js` and the stable favicon, while Vite's
+fingerprinted assets receive one-year immutable caching. The final cache-policy guard
+runs after the build and confirms that Vite copied the policy into `dist`. The PWA manifest and
 service worker cache only the app shell; `/api` responses are never cached because
 journey evidence must remain fresh. After a successful check, the client also keeps
 up to three versioned, device-local journey snapshots so a new search or a temporary
