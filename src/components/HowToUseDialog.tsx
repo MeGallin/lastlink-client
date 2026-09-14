@@ -43,18 +43,17 @@ export function HowToUseDialog() {
           setIsOpen(false)
         }}
       >
-        <div className="how-to-use-dialog__content">
-          <Button
-            className="guide-close"
-            variant="text"
-            type="button"
-            autoFocus
-            onClick={() => closeDialog()}
-          >
-            Close guide ×
+        <header className="how-to-use-dialog__header">
+          <div>
+            <p className="eyebrow">A quick guide</p>
+            <h2 id="how-to-use-title">Plan the last link to your station</h2>
+          </div>
+          <Button variant="secondary" type="button" autoFocus onClick={() => closeDialog()}>
+            Close <span aria-hidden="true">×</span>
           </Button>
-          <p className="eyebrow">A quick guide</p>
-          <h2 id="how-to-use-title">Plan the last link to your station</h2>
+        </header>
+
+        <div className="how-to-use-dialog__content">
           <p className="how-to-use-dialog__lede">
             Can you reach your station in time? Check a station-arrival route using TfL evidence,
             then review the walking, changes and time to spare.

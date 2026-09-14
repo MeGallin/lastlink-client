@@ -493,8 +493,32 @@ li[tabindex='-1']:focus {
 }
 
 .how-to-use-dialog__content {
-  overflow-y: auto;
   padding: clamp(1.25rem, 5vw, 2.2rem);
+}
+
+.how-to-use-dialog__header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1rem clamp(1.25rem, 5vw, 2.2rem);
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.how-to-use-dialog__header .eyebrow {
+  margin-bottom: 0.45rem;
+}
+
+.how-to-use-dialog__header h2 {
+  margin: 0;
+}
+
+.how-to-use-dialog__header > button {
+  flex: 0 0 auto;
 }
 
 .how-to-use-dialog h2,
@@ -601,15 +625,6 @@ li[tabindex='-1']:focus {
   color: var(--muted);
   font-size: 0.84rem;
   font-weight: 750;
-}
-
-.guide-close {
-  position: sticky;
-  top: 0;
-  display: flex;
-  width: fit-content;
-  margin-left: auto;
-  background: var(--surface);
 }
 
 .full-guide {
@@ -745,6 +760,9 @@ li[tabindex='-1']:focus {
     max-height: 100dvh;
     margin: 0;
     border-radius: 0;
+  }
+  .how-to-use-dialog__header {
+    padding: max(1rem, env(safe-area-inset-top)) 1.25rem 1rem;
   }
   .route-diagram-dialog__header { padding: max(1rem, env(safe-area-inset-top)) 1rem 1rem; }
   .route-diagram-dialog__body { padding: 0.5rem 1rem max(2rem, env(safe-area-inset-bottom)); }
@@ -2431,6 +2449,8 @@ button:disabled {
 }
 
 .footer-note {
+  display: grid;
+  gap: 0.35rem;
   width: min(100%, 76rem);
   margin: 0 auto;
   padding: 0 max(1.25rem, calc((100vw - 76rem) / 2)) 1.5rem;
@@ -2441,6 +2461,16 @@ button:disabled {
   color: var(--quiet);
   font-size: 0.78rem;
   line-height: 1.45;
+}
+
+.footer-note a {
+  color: var(--action);
+  font-weight: 750;
+  text-underline-offset: 0.16em;
+}
+
+.footer-note a:hover {
+  color: var(--focus);
 }
 
 @media (min-width: 42rem) {

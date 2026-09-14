@@ -12,6 +12,7 @@ import { SavedItemsView } from './views/SavedItemsView'
 import { journeyStorageKey, type SavedJourney } from './journeys/journey-store'
 import { Button } from './components/ui'
 import { getPrimaryRouteLineColor } from './components/route-flow'
+import { SiteFooter } from './components/SiteFooter'
 
 function readPage(): SitePage {
   return window.location.hash === '#/saved'
@@ -194,9 +195,7 @@ function App() {
         )}
         {page === 'about' && <AboutView />}
       </div>
-      <footer className="footer-note">
-        <p>Station arrival only. Onward trains are not checked.</p>
-      </footer>
+      <SiteFooter />
       {confirmation && (
         <ConfirmDialog
           title={
