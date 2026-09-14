@@ -29,6 +29,7 @@ for (const [path, policy] of policies) {
   const shellRule = policy.indexOf(stableAssetPattern);
 
   assert.ok(policy.includes("<IfModule mod_headers.c>"), `${path} must guard mod_headers`);
+  assert.match(policy, /AddType application\/manifest\+json \.webmanifest/);
   assert.ok(assetRule >= 0, `${path} must target fingerprinted assets only`);
   assert.ok(shellRule >= 0, `${path} must explicitly revalidate stable files`);
   assert.ok(shellRule > assetRule, `${path} stable-file rules must follow asset rules`);
