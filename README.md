@@ -96,6 +96,22 @@ captured in `src/data/stations.ts`.
 The current-location button and coordinate/reverse-geocoding flow are not part
 of this MVP. They need a separate privacy and location-resolution decision.
 
+## Progressive web app
+
+The production client is installable as a lightweight PWA. The manifest defines
+the standalone app identity, the white LastLink theme and explicit 192px and
+512px app icons. The service worker caches only the static application shell and
+fingerprinted assets; it never caches `/api` responses or journey evidence.
+When offline, the shell can open so saved device-local plans remain readable,
+but a new or refreshed journey check still needs a network connection to the
+API. The service worker uses a versioned cache and takes control after an update
+so a newly published shell is adopted without a manual cache purge.
+
+Installability and the no-API-cache boundary are covered by `npm run check:pwa`
+and the full `npm run check` gate. A real phone install, offline launch and
+screen-reader pass remain acceptance checks rather than claims made by the
+automated build.
+
 ## Local development
 
 ```sh

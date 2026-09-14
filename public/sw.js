@@ -1,9 +1,19 @@
-const CACHE_NAME = 'lastlink-shell-v1'
-const APP_SHELL = ['/', '/manifest.webmanifest', '/favicon.svg']
+const CACHE_NAME = 'lastlink-shell-v2'
+const APP_SHELL = [
+  '/',
+  '/index.html',
+  '/manifest.webmanifest',
+  '/favicon.svg',
+  '/icon-192.png',
+  '/icon-512.png',
+]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)),
+    caches
+      .open(CACHE_NAME)
+      .then((cache) => cacheAppShell(cache))
+      .then(() => self.skipWaiting()),
   )
 })
 
@@ -17,7 +27,8 @@ self.addEventListener('activate', (event) => {
             .filter((key) => key !== CACHE_NAME)
             .map((key) => caches.delete(key)),
         ),
-      ),
+      )
+      .then(() => self.clients.claim()),
   )
 })
 
@@ -51,6 +62,22 @@ function isAppShellRequest(request, url) {
     (request.mode === 'navigate' && (url.pathname === '/' || url.pathname === '/index.html')) ||
     url.pathname === '/manifest.webmanifest' ||
     url.pathname === '/favicon.svg' ||
+    url.pathname === '/icon-192.png' ||
+    url.pathname === '/icon-512.png' ||
     url.pathname.startsWith('/assets/')
   )
+}
+
+async function cacheAppShell(cache) {
+  await cache.addAll(APP_SHELL)
+  const index = await cache.match('/index.html')
+  if (!index) throw new Error('The application shell could not be cached')
+
+  const html = await index.text()
+  const assets = [
+    ...html.matchAll(/(?:src|href)="(\/assets\/[^"]+)"/g),
+  ].map((match) => match[1])
+
+  if (assets.length === 0) throw new Error('No built application assets found')
+  await cache.addAll([...new Set(assets)])
 }

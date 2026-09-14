@@ -9,9 +9,9 @@ const policyPaths = [
 const immutableAssetPattern =
   "^[^/]+-[A-Za-z0-9_-]{8,}\\.(?:js|css|woff2|svg|png|jpe?g|gif|webp|ico)$";
 const stableAssetPattern =
-  "^(?:index\\.html|manifest\\.webmanifest|sw\\.js|favicon\\.svg)$";
+  "^(?:index\\.html|manifest\\.webmanifest|sw\\.js|favicon\\.svg|icon-192\\.png|icon-512\\.png)$";
 const immutableFilename = /^[^/]+-[A-Za-z0-9_-]{8,}\.(?:js|css|woff2|svg|png|jpe?g|gif|webp|ico)$/;
-const stableFilename = /^(?:index\.html|manifest\.webmanifest|sw\.js|favicon\.svg)$/;
+const stableFilename = /^(?:index\.html|manifest\.webmanifest|sw\.js|favicon\.svg|icon-192\.png|icon-512\.png)$/;
 const policies = policyPaths.map((path) => [path, readFileSync(path, "utf8")]);
 const generatedAssets = readdirSync(resolve("dist", "assets"), { withFileTypes: true })
   .filter((entry) => entry.isFile())
@@ -47,7 +47,7 @@ assert.match("_v-CW0R2FO_.js", immutableFilename);
 assert.match("_v-CjLrUSL-.js", immutableFilename);
 assert.doesNotMatch("favicon.svg", immutableFilename);
 assert.doesNotMatch("index.html", immutableFilename);
-for (const filename of ["index.html", "manifest.webmanifest", "sw.js", "favicon.svg"]) {
+for (const filename of ["index.html", "manifest.webmanifest", "sw.js", "favicon.svg", "icon-192.png", "icon-512.png"]) {
   assert.match(filename, stableFilename);
 }
 
