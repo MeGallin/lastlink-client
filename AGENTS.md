@@ -27,8 +27,19 @@ workspace remains the source of truth for project decisions and handoff:
 npm run dev
 npm run lint
 npm run build
+npm run build:deploy
 npm run check
 ```
+
+`npm run build:deploy` creates the production Vite build and then runs
+`scripts/deploy-to-xampp.cmd`, which mirrors `dist/` into the configured local
+web root `C:\xampp\htdocs\WebSitesDesigns\live\lastlink`. The copy uses a
+staging directory and a rollback-safe directory swap; files no longer present
+in `dist/` are removed from that destination by design. If activation or
+post-activation validation fails, the previous deployment is restored. The
+previous version is retained as a rollback snapshot until the next deployment;
+if that snapshot cannot be cleaned up, the live deployment is left untouched.
+This is a Windows/XAMPP-only command.
 
 The Vite development proxy sends `/api` requests to the owner-managed API at
 `http://localhost:3000`. Set `VITE_API_BASE_URL` only when the API is hosted at

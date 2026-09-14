@@ -107,6 +107,23 @@ The Vite development server proxies `/api` to the owner-managed API at
 `http://localhost:3000`. The API must be running separately. Override the API
 base path with `VITE_API_BASE_URL` when needed.
 
+To create and copy a production build to the configured local web root used by
+the `lastlink.livenotice.co.uk` site, run:
+
+```sh
+npm run build:deploy
+```
+
+This runs the normal Vite build first, then stages `dist/` and performs a
+rollback-safe directory swap into
+`C:\xampp\htdocs\WebSitesDesigns\live\lastlink`. If activation or validation
+fails, the previous deployment is restored. Files no longer present in the
+build are removed, so the folder contains only the current production output.
+The previous version is retained as a rollback snapshot until the next
+deployment; if that snapshot cannot be cleaned up, the live deployment is left
+untouched.
+The helper is intended for Windows/XAMPP deployments.
+
 ## Checks
 
 ```sh

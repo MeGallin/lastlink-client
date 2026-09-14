@@ -13,6 +13,7 @@
     "check:route-flow": "node --experimental-strip-types scripts/check-route-flow.mjs",
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:deploy": "npm run build && scripts\\deploy-to-xampp.cmd",
     "lint": "oxlint",
     "preview": "vite preview",
     "typecheck": "tsc -b --pretty false"
