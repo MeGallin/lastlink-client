@@ -152,3 +152,11 @@ final minute and disappears once the planned start has passed, at which point
 the normal recheck safeguard applies. The countdown is based on the saved TfL
 Journey Planner estimate; it is not live vehicle tracking and makes no extra
 provider requests.
+
+The hosted API runs on a Render Free instance during the prototype. After idle
+time, its first request can take about a minute while the service wakes. The
+client keeps a journey check open for up to 75 seconds and changes its status
+message after four seconds to say that the check is taking longer than usual
+and the service may be waking after inactivity. This is a clear cold-start
+explanation, not a keep-alive poll; monitoring should alert on failures, and an
+always-on plan is the production upgrade path.

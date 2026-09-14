@@ -7,7 +7,10 @@ export interface JourneyLocation {
   tflStopPointId: string
 }
 
-const requestTimeoutMs = 20_000
+// Render's free service can take about a minute to wake after idle time.
+// Keep the request open long enough for that one-time platform delay while
+// the UI explains what is happening to the traveller.
+export const requestTimeoutMs = 75_000
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '/api').replace(/\/$/, '')
 
 export async function requestJourneyCheck(
@@ -52,10 +55,10 @@ export async function requestJourneyCheck(
     return body
   } catch (error) {
     if (error instanceof DOMException && error.name === 'AbortError') {
-      throw new Error('The check took too long. Please try again.')
+      throw new Error('The journey service took too long to respond. It may still be waking up. Please try again.')
     }
     if (error instanceof TypeError) {
-      throw new Error('The journey service could not be reached. Please try again.')
+      throw new Error('The journey service could not be reached. It may be waking up. Please try again in a moment.')
     }
     throw error
   } finally {

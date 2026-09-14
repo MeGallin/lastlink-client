@@ -244,8 +244,8 @@ try {
   const routeDialogIndex = answerWithNotice.indexOf("<dialog");
   assert.ok(visibleNoticeIndex >= 0 && visibleNoticeIndex < routeDialogIndex);
   for (const message of [
-    "The check took too long. Please try again.",
-    "The journey service could not be reached. Please try again.",
+    "The journey service took too long to respond. It may still be waking up. Please try again.",
+    "The journey service could not be reached. It may be waking up. Please try again in a moment.",
     "TfL could not complete this check. Try again shortly.",
   ]) {
     const view = renderToStaticMarkup(

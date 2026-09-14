@@ -1,12 +1,14 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import type { JourneyInput } from '../journeys/journey-store'
 import { routeName } from '../journeys/journey-presentation'
+import { pendingJourneyCopy, scheduleWakeNotice } from './journey-check-status'
 
 export interface JourneyCheckError {
   message: string
   field?: string
   input: JourneyInput
 }
+
 export function JourneyCheckFeedback({
   error,
   pending,
@@ -37,10 +39,28 @@ export function JourneyCheckFeedback({
         </div>
       )}
       {pending && (
-        <p className="form-message" role="status">
-          Checking TfL: {routeName(pending)}…
-        </p>
+        <PendingJourneyMessage key={routeName(pending)} pending={pending} />
       )}
     </>
+  )
+}
+
+function PendingJourneyMessage({ pending }: { pending: JourneyInput }) {
+  const [serviceWaking, setServiceWaking] = useState(false)
+  useEffect(() => {
+    return scheduleWakeNotice(() => setServiceWaking(true))
+  }, [])
+  const copy = pendingJourneyCopy(pending)
+  return (
+    <div className="form-message" role="status">
+      {serviceWaking ? (
+        <>
+          <strong>{copy.wakingHeading}</strong>
+          <p>{copy.wakingBody}</p>
+        </>
+      ) : (
+        <>{copy.checking}</>
+      )}
+    </div>
   )
 }
