@@ -124,3 +124,10 @@ from Saved journeys, and an active plan remains available through the protected 
 These snapshots are recovery references, not a live cache: they are never refreshed in
 the background. They can be recalled or removed from the Saved journeys page. The catalogue guard also
 checks that the captured Tube catalogue still contains 272 unique stations.
+
+When a viable or tight result is within ten minutes of its planned first leg,
+the result shows a local departure countdown. It switches to seconds for the
+final minute and disappears once the planned start has passed, at which point
+the normal recheck safeguard applies. The countdown is based on the saved TfL
+Journey Planner estimate; it is not live vehicle tracking and makes no extra
+provider requests.

@@ -13,6 +13,8 @@ const server = await createServer({
 try {
   const { JourneyAnswer } = await server.ssrLoadModule('/src/components/JourneyAnswer.tsx')
   const { JourneyForm } = await server.ssrLoadModule('/src/components/JourneyForm.tsx')
+  const { DepartureCountdown } = await server.ssrLoadModule('/src/components/DepartureCountdown.tsx')
+  const { getDepartureCountdown } = await server.ssrLoadModule('/src/components/departure-countdown.ts')
   const formHtml = renderToStaticMarkup(
     createElement(JourneyForm, {
       values: {
@@ -174,6 +176,33 @@ try {
     createElement(JourneyAnswer, { response: singleDate }),
   )
   assert.doesNotMatch(noAlternatives, /Other options|alternative itinerary/)
+  const countdownDeparture = Date.parse('2030-09-11T20:00:00Z')
+  assert.equal(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 11 * 60_000), null)
+  assert.deepEqual(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 10 * 60_000), {
+    secondsRemaining: 600,
+    tone: 'watch',
+  })
+  assert.equal(
+    getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 10 * 60_000 - 1),
+    null,
+  )
+  assert.deepEqual(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 3 * 60_000), {
+    secondsRemaining: 180,
+    tone: 'watch',
+  })
+  assert.deepEqual(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 60_000), {
+    secondsRemaining: 60,
+    tone: 'urgent',
+  })
+  assert.deepEqual(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 59_999), {
+    secondsRemaining: 60,
+    tone: 'seconds',
+  })
+  assert.deepEqual(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture - 42_000), {
+    secondsRemaining: 42,
+    tone: 'seconds',
+  })
+  assert.equal(getDepartureCountdown('2030-09-11T20:00:00Z', countdownDeparture), null)
   const originalNow = Date.now
   try {
     const positive = structuredClone(response)
@@ -206,6 +235,28 @@ try {
     assert.match(elapsed, /previous deadline has passed/)
     assert.doesNotMatch(elapsed, /Leave now and follow/)
     assert.doesNotMatch(elapsed, /View route steps/)
+    Date.now = () => countdownDeparture - 42_000
+    const countdownHtml = renderToStaticMarkup(
+      createElement(DepartureCountdown, {
+        departureAt: '2030-09-11T20:00:00Z',
+        mode: 'tube',
+        lineName: 'Jubilee',
+      }),
+    )
+    assert.match(countdownHtml, /Departure countdown/)
+    assert.match(countdownHtml, /Leave now/)
+    assert.match(countdownHtml, /Catch the Jubilee line in 42 seconds/)
+    assert.match(countdownHtml, /departure-countdown--seconds/)
+    assert.match(countdownHtml, /aria-live="off"/)
+    for (const status of ['not_viable', 'unable_to_verify']) {
+      const unsafe = structuredClone(response)
+      unsafe.status = status
+      unsafe.route.legs[0].departureAt = '2030-09-11T20:00:00Z'
+      unsafe.route.legs[0].mode = 'tube'
+      unsafe.route.legs[0].lineName = 'Jubilee'
+      const unsafeHtml = renderToStaticMarkup(createElement(JourneyAnswer, { response: unsafe }))
+      assert.doesNotMatch(unsafeHtml, /Departure countdown/)
+    }
     positive.status = 'unable_to_verify'
     assert.doesNotMatch(
       renderToStaticMarkup(createElement(JourneyAnswer, { response: positive })),

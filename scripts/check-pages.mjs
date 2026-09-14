@@ -83,6 +83,8 @@ try {
   assert.match(howToText, /Resume journey/);
   assert.match(howToText, /no account sync or automatic refresh/i);
   assert.match(howToText, /Read more about last\s+link/);
+  assert.match(howToText, /local departure countdown/);
+  assert.match(aboutText, /final ten minutes.*local countdown/);
 
   const mobileNavHtml = renderToStaticMarkup(
     createElement(MobileNav, { currentPage: "journey" }),

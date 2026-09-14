@@ -1461,6 +1461,51 @@ button:disabled {
   line-height: 1.5;
 }
 
+.departure-countdown {
+  --countdown-accent: var(--action);
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1rem;
+  padding: 0.8rem 1rem 0.85rem;
+  border-left: 0.35rem solid var(--countdown-accent);
+  background: color-mix(in srgb, var(--countdown-accent) 7%, var(--surface));
+}
+
+.departure-countdown--urgent {
+  --countdown-accent: var(--warning);
+}
+
+.departure-countdown--seconds {
+  --countdown-accent: var(--danger);
+}
+
+.departure-countdown__eyebrow {
+  margin: 0;
+  color: var(--countdown-accent);
+  font-size: 0.7rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.departure-countdown__value {
+  margin: 0;
+  color: var(--text);
+  font-size: clamp(1rem, 2.1vw, 1.18rem);
+  line-height: 1.35;
+}
+
+.departure-countdown__value strong {
+  color: var(--countdown-accent);
+}
+
+.departure-countdown__note {
+  margin: 0.15rem 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
 .answer-summary {
   max-width: 46rem;
   margin: 1.1rem 0 0;

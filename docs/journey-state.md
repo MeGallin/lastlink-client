@@ -47,6 +47,12 @@ a saved check. Recheck feedback renders even when the form is closed.
 Confirmations are invalidated by cross-tab storage changes, and start/end
 operations validate the expected protected journey ID before changing it.
 
+Viable and tight results show a local departure countdown during the final ten
+minutes before the first planned leg. It changes to seconds below one minute
+and stops at the planned start, when the normal recheck safeguard takes over.
+This is presentation-only, based on the saved Journey Planner estimate; it
+does not poll TfL, track a vehicle or infer the user's location.
+
 TfL remains the source of route facts. Reference plans never claim live tracking.
 The prototype limitation remains visible: Journey Planner is connected, but
 timetable, arrivals and disruption corroboration are not. Supplied notices are

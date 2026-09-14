@@ -14,6 +14,7 @@ import { TubeStationSequence } from './TubeStationSequence'
 import { useDisplayClock } from './useDisplayClock'
 import { Button } from './ui'
 import { RouteDiagramDialog } from './RouteDiagramDialog'
+import { DepartureCountdown } from './DepartureCountdown'
 import {
   formatAlternativeMargin,
   formatAlternativeServices,
@@ -108,10 +109,10 @@ export function JourneyAnswer({
   onRouteDialogClose,
 }: JourneyAnswerProps) {
   const route = response.route
-  const now = useDisplayClock()
+  const now = useDisplayClock(1_000)
   const departure = Date.parse(route?.legs[0]?.departureAt ?? '')
   const needsRecheck =
-    (response.status === 'viable' || response.status === 'tight') && now > departure
+    (response.status === 'viable' || response.status === 'tight') && now >= departure
   const deadline = Date.parse(currentInput?.arriveBy ?? '')
   const deadlineHasPassed = Number.isFinite(deadline) && now >= deadline
   const canStart =
@@ -199,6 +200,17 @@ export function JourneyAnswer({
         <p className="route-timing-note">
           Checked {displayDateTime(response.checkedAt)} · London time · saved estimate, not live tracking
         </p>
+        {!isActive &&
+          !needsRecheck &&
+          !deadlineHasPassed &&
+          ['viable', 'tight'].includes(response.status) &&
+          route?.legs[0] && (
+          <DepartureCountdown
+            departureAt={route.legs[0].departureAt}
+            mode={route.legs[0].mode}
+            lineName={route.legs[0].lineName}
+          />
+        )}
         {previous && (
           <p className="previous-plan-note">This is not the answer to the changed search above.</p>
         )}

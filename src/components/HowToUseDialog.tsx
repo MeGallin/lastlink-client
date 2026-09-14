@@ -112,6 +112,12 @@ export function HowToUseDialog() {
               that information is available. Expand View service details for expected and
               published times, and expand station instructions for walking guidance.
             </p>
+            <p>
+              When a viable or tight plan is close to its planned start, a local departure
+              countdown appears. It shows minutes, then seconds in the final minute. This is based
+              on the TfL estimate, not live vehicle movement; once the time passes, recheck before
+              starting.
+            </p>
           </section>
 
           <section className="how-to-use-dialog__section">

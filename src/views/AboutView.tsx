@@ -129,8 +129,10 @@ export function AboutView() {
             Expected journey times are estimates from the TfL Journey Planner itinerary. Published
             schedule times are provider schedule information, not live vehicle observations. The
             route total, walking time and margin are calculated from the returned itinerary and
-            your deadline. Check the route again when your departure time is close or conditions
-            have changed.
+            your deadline. In the final ten minutes before the planned first leg, a local countdown
+            shows the remaining minutes and then seconds in the final minute. It is an estimate,
+            not live vehicle tracking. Check the route again when the planned time has passed or
+            conditions have changed.
           </p>
         </section>
 
