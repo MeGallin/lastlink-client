@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { KeyboardEvent, MouseEvent } from 'react'
 import { tubeStations } from '../data/stations'
 import { TextInput } from './ui'
@@ -31,6 +31,7 @@ export function StationCombobox({
   onChange,
 }: StationComboboxProps) {
   const inputRef = useRef<HTMLInputElement>(null)
+  const optionsRef = useRef<HTMLUListElement>(null)
   const [activeIndex, setActiveIndex] = useState(-1)
   const isOpen = openPickerId === id
   const listboxId = `${id}-options`
@@ -47,6 +48,16 @@ export function StationCombobox({
     () => matchingStations.map((station) => ({ kind: 'station' as const, name: station.name })),
     [matchingStations],
   )
+
+  useEffect(() => {
+    const list = optionsRef.current
+    const option = list?.children[activeIndex] as HTMLElement | undefined
+    if (!isOpen || !list || !option) return
+    const listRect = list.getBoundingClientRect()
+    const optionRect = option.getBoundingClientRect()
+    if (optionRect.top < listRect.top) list.scrollTop -= listRect.top - optionRect.top
+    else if (optionRect.bottom > listRect.bottom) list.scrollTop += optionRect.bottom - listRect.bottom
+  }, [activeIndex, isOpen])
 
   function openOptions() {
     onOpen()
@@ -94,6 +105,7 @@ export function StationCombobox({
     }
 
     if (event.key === 'Escape') {
+      if (isOpen) event.preventDefault()
       onClose()
       setActiveIndex(-1)
     }
@@ -133,7 +145,7 @@ export function StationCombobox({
           aria-controls={listboxId}
           aria-expanded={isOpen}
           aria-activedescendant={
-            activeIndex >= 0 ? `${listboxId}-option-${activeIndex}` : undefined
+            isOpen && activeIndex >= 0 && activeIndex < pickerOptions.length ? `${listboxId}-option-${activeIndex}` : undefined
           }
           aria-describedby={describedBy}
           aria-invalid={invalid}
@@ -175,8 +187,11 @@ export function StationCombobox({
 
       {isOpen && (
         <div className="station-picker__popup">
-          {pickerOptions.length > 0 ? (
+          <p className="station-picker__hint" role="status" aria-live="polite">
+            {normalizedQuery ? `${pickerOptions.length} matching Tube stations` : `Type to filter · ${tubeStations.length} Tube stations`}
+          </p>
             <ul
+              ref={optionsRef}
               className="station-picker__options"
               id={listboxId}
               role="listbox"
@@ -196,10 +211,11 @@ export function StationCombobox({
                   onClick={() => selectStation(option.name)}
                 >
                   {option.name}
+                  {option.name === value && <span className="station-picker__selected" aria-hidden="true">Selected ✓</span>}
                 </li>
               ))}
             </ul>
-          ) : (
+          {pickerOptions.length === 0 && (
             <p className="station-picker__empty" role="status">
               No matching Tube stations. Choose a station from the TfL list.
             </p>

@@ -59,15 +59,26 @@ unless the interaction is genuinely reused.
 `src/journeys/` separates storage, input/result presentation and request/state
 orchestration from the views. See [journey state and recovery](docs/journey-state.md).
 The traveller explicitly selects their current leg, can explore another journey,
-and returns using **Back to my journey**. An expired deadline is reviewed rather
+and returns using **Resume journey**. This compact entry sits in the page flow,
+so it cannot cover planning fields, suggestions or saved-card actions. While following
+a journey, the current step is the primary view; the original assessment is under
+**Plan details**, and **View current step** opens the unchanged route diagram.
+An expired deadline is reviewed rather
 than automatically moved forward. The UI labels each retained result with its
 own route, deadline and check time; failed checks cannot masquerade as that result.
 
 The Journey page opens a **How to use lastlink** guide the first time it is
-visited in a browser. It can be reopened from the link above the form. The guide
+visited in a browser. It can be reopened from the link above the form. Three quick
+steps lead to the planning action, with the full guide in a native disclosure. It
 covers the four planning inputs, answer states, route-leg evidence, expected and
 published timings, saved-plan recovery, active-journey controls, return planning,
 fresh checks and the three-plan device-local limit described on the About page.
+
+Saved cards explain their own freshness. **Resume journey** is the protected
+plan's primary action. **Review and recheck** opens an old plan's deadline for
+explicit review without changing that time or issuing a request. Return planning
+remains a separate secondary action. All modal surfaces share native dialog
+semantics, scroll locking and focus return through `useDialogSurface`.
 
 The UI deliberately says when the result is station-only. It does not verify
 an onward National Rail service or promise that a traveller will board it.

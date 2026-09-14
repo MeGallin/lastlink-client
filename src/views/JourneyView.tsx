@@ -1,4 +1,4 @@
-import { useState, type RefObject } from 'react'
+import { useRef, useState, type RefObject } from 'react'
 import { HowToUseDialog } from '../components/HowToUseDialog'
 import { JourneyAnswer } from '../components/JourneyAnswer'
 import { JourneyForm } from '../components/JourneyForm'
@@ -26,6 +26,7 @@ export function JourneyView({
 }) {
   const isActive = !!w.shown && w.shown.id === w.active?.id
   const [diagramRequest, setDiagramRequest] = useState<{ journeyId: string; target: string }>()
+  const planDetailsRef = useRef<HTMLDetailsElement>(null)
   const draftChanged =
     !!w.shown && !sameJourneyInput(w.shown.input, w.draft, w.draftDeadlineAtMs)
   const hidePreviousAnswer = w.editing && draftChanged
@@ -51,20 +52,7 @@ export function JourneyView({
           previousName={w.shown ? routeName(w.shown.input) : undefined}
           returnFrom={w.returnJourneyFrom ? routeName(w.returnJourneyFrom.input) : undefined}
         />
-      ) : (
-        <section className="new-journey-prompt" aria-label="Start a new journey">
-          <div className="new-journey-prompt__copy">
-            <p className="eyebrow">Plan something else</p>
-            <p>
-              Clear the current search and start with empty station fields. Your saved journey
-              stays protected in Saved journeys.
-            </p>
-          </div>
-          <Button type="button" variant="secondary" onClick={onStartNew}>
-            Start a new journey
-          </Button>
-        </section>
-      )}
+      ) : null}
       {!w.editing && (
         <JourneyCheckFeedback
           error={w.error}
@@ -85,11 +73,21 @@ export function JourneyView({
           onLeg={w.changeLeg}
           onReplan={onExplore}
           onEnd={onEnd}
-          onViewStep={(target) => setDiagramRequest({ journeyId: w.shown!.id, target })}
+          onViewStep={(target) => {
+            if (planDetailsRef.current) planDetailsRef.current.open = true
+            setDiagramRequest({ journeyId: w.shown!.id, target })
+          }}
         />
       )}
       {w.shown && !hidePreviousAnswer && (
-        <JourneyAnswer
+        <details
+          key={w.shown.id + ':' + String(isActive && !w.editing)}
+          ref={planDetailsRef}
+          className={isActive && !w.editing ? 'protected-plan-details' : 'plan-details plan-details--expanded'}
+          open={isActive && !w.editing ? undefined : true}
+        >
+          <summary>Plan details <span>Original route, deadline and evidence</span></summary>
+          <JourneyAnswer
           key={w.shown.id}
           onRouteDialogClose={() => setDiagramRequest(undefined)}
           routeDialogRequest={diagramRequest?.journeyId === w.shown.id ? diagramRequest : undefined}
@@ -102,7 +100,19 @@ export function JourneyView({
           onRecheck={() => w.check(w.shown!.input, 'saved')}
           onReview={() => onExplore(w.shown!.input.originName)}
           onStart={onStart}
-        />
+          />
+        </details>
+      )}
+      {!w.editing && (
+        <section className="new-journey-prompt" aria-label="Start a new journey">
+          <div className="new-journey-prompt__copy">
+            <p className="eyebrow">Plan something else</p>
+            <p>Start with empty station fields. Saved plans and your protected journey stay unchanged.</p>
+          </div>
+          <Button type="button" variant="secondary" onClick={onStartNew}>
+            Start a new journey
+          </Button>
+        </section>
       )}
     </>
   )

@@ -30,7 +30,7 @@ try {
   assert.match(formHtml, /id="origin"[^>]*value="Waterloo"/)
   assert.match(formHtml, /id="destination"[^>]*value="Stratford"/)
   assert.match(formHtml, /id="arriveBy"[^>]*min="[^"]+"/)
-  assert.match(formHtml, /Be at the destination Tube station by this time\. Past times are unavailable/)
+  assert.match(formHtml, /Be at the destination station by this time\. Enter UK time; results are shown in London time/)
   assert.match(formHtml, /Quick choices/)
   assert.match(formHtml, /In 30 minutes/)
   assert.match(formHtml, /Tomorrow at 09:00/)
@@ -98,7 +98,10 @@ try {
       response,
     }),
   )
-  assert.match(html, /This result reflects the last check/)
+  assert.match(html, /Assessment at last check/)
+  assert.match(html, /saved estimate, not live tracking/)
+  assert.ok(html.indexOf('class="next-action"') < html.indexOf('class="route-summary"'))
+  assert.doesNotMatch(html, /class="answer-facts"/)
   assert.doesNotMatch(html, /Saved on this device|Forget saved route/)
   assert.match(html, /Other options \(1\) · summaries only/)
   assert.match(html, /11 Sept 2026 to 12 Sept 2026/)

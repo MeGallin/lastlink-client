@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import './App.css'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { SiteHeader } from './components/SiteHeader'
 import type { SitePage } from './components/navigation'
 import { useJourneyWorkspace } from './journeys/useJourneyWorkspace'
 import { routeName } from './journeys/journey-presentation'
+import { journeyFocusTarget } from './journeys/journey-focus'
 import { AboutView } from './views/AboutView'
 import { JourneyView } from './views/JourneyView'
 import { SavedItemsView } from './views/SavedItemsView'
 import { journeyStorageKey, type SavedJourney } from './journeys/journey-store'
+import { Button } from './components/ui'
+import { getPrimaryRouteLineColor } from './components/route-flow'
 
 function readPage(): SitePage {
   return window.location.hash === '#/saved'
@@ -29,7 +32,9 @@ function App() {
   const cancelRef = useRef(w.cancelCheck)
   const lastFocus = useRef('')
   const lastPage = useRef<SitePage | null>(null)
+  const formFocus = useRef<string | null>(null)
   const activeId = w.active?.id ?? null
+  const activeRouteAccent = getPrimaryRouteLineColor(w.active?.response.route?.legs)
   const viewingActive = page === 'journey' && !w.editing && w.shown?.id === activeId
   useEffect(() => {
     // A confirmation must never act on a replacement received from another tab.
@@ -63,19 +68,24 @@ function App() {
     lastPage.current = page
     const frame = requestAnimationFrame(() => {
       lastFocus.current = focusKey
+      const focusTarget = page === 'journey'
+        ? journeyFocusTarget(w.focusIntent, w.editing, !!w.shown, w.active?.id === w.shown?.id)
+        : 'page'
       const target =
-        page === 'journey' && w.shown
-          ? w.active?.id === w.shown.id && !w.editing
+        focusTarget === 'form'
+          ? document.getElementById(formFocus.current ?? 'page-title')
+          : focusTarget === 'current'
             ? document.getElementById('current-journey')
-            : answerRef.current
-          : document.querySelector<HTMLElement>('h1')
+            : focusTarget === 'answer'
+              ? answerRef.current ?? document.querySelector<HTMLElement>('h1')
+              : document.querySelector<HTMLElement>('h1')
       target?.focus({ preventScroll: true })
       if (page === 'journey' && !pageChanged) target?.scrollIntoView({ block: 'start' })
       else window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     })
     return () => cancelAnimationFrame(frame)
     // Only deliberate page/result changes move focus, never clock or draft updates.
-  }, [page, w.focusVersion, w.shown, w.active?.id, w.editing])
+  }, [page, w.focusVersion, w.focusIntent, w.shown, w.active?.id, w.editing])
   function navigate(next: SitePage) {
     window.location.hash = next === 'journey' ? '/' : '/' + next
   }
@@ -84,16 +94,26 @@ function App() {
     navigate('journey')
   }
   function planReturnJourney(journey: SavedJourney) {
+    formFocus.current = 'origin'
     w.planReturnJourney(journey)
     navigate('journey')
     requestAnimationFrame(() => document.getElementById('origin')?.focus())
   }
   function explore(origin?: string) {
+    formFocus.current = 'origin'
     w.explore(origin && w.shown ? { ...w.shown.input, originName: origin } : undefined)
     navigate('journey')
     requestAnimationFrame(() => document.getElementById('origin')?.focus())
   }
+  function reviewSavedJourney(journey: SavedJourney) {
+    formFocus.current = 'arriveBy'
+    w.openJourney(journey)
+    w.explore(journey.input)
+    navigate('journey')
+    requestAnimationFrame(() => document.getElementById('arriveBy')?.focus())
+  }
   function startNewJourney() {
+    formFocus.current = 'origin'
     w.startNewJourney()
     navigate('journey')
     requestAnimationFrame(() => {
@@ -115,6 +135,25 @@ function App() {
     <main className="app-shell">
       <SiteHeader currentPage={page} onJourneyHome={startNewJourney} />
       <div className="workspace">
+        {w.active && !viewingActive && (
+          <aside
+            className="active-return"
+            aria-label="Protected current journey"
+            style={
+              activeRouteAccent
+                ? ({ '--route-accent': activeRouteAccent } as CSSProperties)
+                : undefined
+            }
+          >
+            <div className="active-return__identity">
+              <strong>Your current journey is protected</strong>
+              <span>{routeName(w.active.input)}</span>
+            </div>
+            <Button type="button" variant="secondary" onClick={() => openJourney(w.active!)}>
+              Resume journey
+            </Button>
+          </aside>
+        )}
         {w.storageWarning && (
           <p className="storage-warning" role="status">
             {w.storageWarning}
@@ -143,6 +182,7 @@ function App() {
             journeys={w.library.journeys}
             activeId={w.active?.id ?? null}
             onResume={openJourney}
+            onReview={reviewSavedJourney}
             onPlanReturn={planReturnJourney}
             onRemove={(journey) =>
               setConfirmation({ kind: 'remove', journey, expectedActiveId: activeId })
@@ -154,16 +194,6 @@ function App() {
         )}
         {page === 'about' && <AboutView />}
       </div>
-      {w.active && !viewingActive && (
-        <aside className="active-return" aria-label="Protected current journey">
-          <span>
-            <strong>Your journey</strong> {routeName(w.active.input)}
-          </span>
-          <button type="button" onClick={() => openJourney(w.active!)}>
-            Back to my journey
-          </button>
-        </aside>
-      )}
       <footer className="footer-note">
         <p>Station arrival only. Onward trains are not checked.</p>
       </footer>

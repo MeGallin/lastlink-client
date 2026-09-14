@@ -1,4 +1,5 @@
 import { LastLinkLogo } from '../components/LastLinkLogo'
+import { Button } from '../components/ui'
 
 export function AboutView() {
   return (
@@ -16,6 +17,22 @@ export function AboutView() {
         </p>
       </div>
 
+      <nav className="about-index" aria-label="On this page">
+        <span>On this page</span>
+        {[
+          ['about-planning', 'Planning'],
+          ['about-route', 'Route and times'],
+          ['about-saved', 'Saved journeys'],
+          ['about-limits', 'Evidence and limits'],
+        ].map(([id, label]) => (
+          <Button key={id} type="button" variant="text" onClick={() => {
+            const heading = document.getElementById(id)
+            heading?.scrollIntoView({ block: 'start', behavior: 'auto' })
+            heading?.focus({ preventScroll: true })
+          }}>{label}</Button>
+        ))}
+      </nav>
+
       <div className="about-sections">
         <section>
           <h2>
@@ -30,7 +47,7 @@ export function AboutView() {
         </section>
 
         <section>
-          <h2>Plan a journey in four steps</h2>
+          <h2 id="about-planning" tabIndex={-1}>Plan a journey in four steps</h2>
           <ol>
             <li>
               <strong>Starting point:</strong> choose a Tube station from the TfL suggestions.
@@ -65,7 +82,7 @@ export function AboutView() {
               <strong>Tight margin</strong> means the route is possible but leaves little room.
             </li>
             <li>
-              <strong>Not viable</strong> means the route misses the required arrival time.
+              <strong>Not viable</strong> means the route cannot meet the checked timing requirements.
             </li>
             <li>
               <strong>Unable to verify</strong> means the available evidence was not strong enough
@@ -79,7 +96,7 @@ export function AboutView() {
         </section>
 
         <section>
-          <h2>Follow the route leg by leg</h2>
+          <h2 id="about-route" tabIndex={-1}>Follow the route leg by leg</h2>
           <p>
             Choose View route steps for a focused view of the route, filling the screen on a
             phone. Close returns to the result; View current step opens the diagram at your
@@ -118,7 +135,7 @@ export function AboutView() {
         </section>
 
         <section>
-          <h2>Save, retrieve and reverse a journey</h2>
+          <h2 id="about-saved" tabIndex={-1}>Save, retrieve and reverse a journey</h2>
           <p>
             Up to three plans are kept in this browser on this device when storage is available.
             Choose Start this journey to protect one plan; two slots remain for recent checks. New
@@ -142,7 +159,8 @@ export function AboutView() {
             Start a journey only when you want to protect that plan. In the progress panel, choose
             your current leg yourself, use View current step to return to its route detail, or use
             Replan from here to create a separate search from the current station. If you visit
-            another page or search, Back to my journey returns to the protected plan.
+            another page or search, Resume journey returns to the protected plan. The original
+            assessment remains under Plan details while you follow the current step.
           </p>
           <p>
             Progress survives reload when saved successfully, but <LastLinkLogo variant="wordmark" />
@@ -152,7 +170,7 @@ export function AboutView() {
         </section>
 
         <section>
-          <h2>Freshness and provider evidence</h2>
+          <h2 id="about-limits" tabIndex={-1}>Freshness and provider evidence</h2>
           <p>
             TfL provider responses are the source of truth for the journey check. The prototype
             currently connects Journey Planner for the route estimate and shows the returned

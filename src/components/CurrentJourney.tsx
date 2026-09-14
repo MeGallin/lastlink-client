@@ -1,10 +1,17 @@
+import type { CSSProperties } from 'react'
 import type { SavedJourney } from '../journeys/journey-store'
 import {
   canonicalTubeStationName,
   displayDateTime,
   shortStation,
 } from '../journeys/journey-presentation'
-import { formatRouteDirectionText, formatRouteService, getRouteChange } from './route-flow'
+import {
+  formatRouteDirectionText,
+  formatRouteService,
+  getLineColor,
+  getPrimaryRouteLineColor,
+  getRouteChange,
+} from './route-flow'
 import { Button, FormField, SelectControl } from './ui'
 export function CurrentJourney({
   journey,
@@ -25,9 +32,15 @@ export function CurrentJourney({
   const leg = legs[legIndex] ?? legs[0]
   const direction = formatRouteDirectionText(leg.directions, leg.instructions?.detailed)
   const change = legIndex > 0 ? getRouteChange(legs[legIndex - 1], leg) : undefined
+  const currentLegColor = getLineColor(leg.lineName)
+  const routeAccent = getPrimaryRouteLineColor(legs) ?? currentLegColor
   return (
     <section
       className="current-journey"
+      style={{
+        '--route-accent': routeAccent,
+        '--route-line-color': currentLegColor,
+      } as CSSProperties}
       aria-labelledby="current-step-title"
       tabIndex={-1}
       id="current-journey"
@@ -69,6 +82,11 @@ export function CurrentJourney({
             Saved plan, checked {displayDateTime(journey.response.checkedAt)}. This does not track
             your train or location.
           </p>
+          <p className="route-timing-note">
+            {journey.response.dataMode === 'fixture'
+              ? 'Demonstration only. Not live travel information.'
+              : 'Prototype TfL estimate. Live arrivals and disruption cross-checks are not connected. Follow station signs and current advice.'}
+          </p>
         </div>
         <div className="current-journey__controls" aria-label="Journey controls">
           <FormField
@@ -99,14 +117,14 @@ export function CurrentJourney({
             </Button>
             <Button
               type="button"
-              variant="text"
+              variant="secondary"
               onClick={() =>
                 onReplan(canonicalTubeStationName(leg.from) ?? shortStation(leg.from))
               }
             >
               Replan from here
             </Button>
-            <Button type="button" variant="danger" onClick={onEnd}>
+            <Button type="button" variant="text" className="end-journey-action" onClick={onEnd}>
               End journey
             </Button>
           </div>

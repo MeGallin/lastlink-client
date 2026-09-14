@@ -1,26 +1,28 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { AppLink, Button } from './ui'
 import { LastLinkLogo } from './LastLinkLogo'
+import { useDialogSurface } from './useDialogSurface'
 
 const howToUseSeenKey = 'lastlink.how-to-use-seen.v1'
 
 export function HowToUseDialog() {
-  const dialogRef = useRef<HTMLDialogElement>(null)
+  const { dialogRef, open, close, finish } = useDialogSurface()
   const [isOpen, setIsOpen] = useState(() => shouldShowInitially())
 
   useEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) return
 
-    if (isOpen && !dialog.open) {
-      dialog.showModal()
+    if (isOpen) {
+      open()
     } else if (!isOpen && dialog.open) {
-      dialog.close()
+      close()
     }
-  }, [isOpen])
+  }, [isOpen, dialogRef, open, close])
 
-  function closeDialog() {
+  function closeDialog(restoreFocus = true) {
     rememberSeen()
+    close(restoreFocus)
     setIsOpen(false)
   }
 
@@ -34,7 +36,9 @@ export function HowToUseDialog() {
         ref={dialogRef}
         className="how-to-use-dialog"
         aria-labelledby="how-to-use-title"
+        onClick={(event) => { if (event.target === event.currentTarget) closeDialog() }}
         onClose={() => {
+          finish()
           rememberSeen()
           setIsOpen(false)
         }}
@@ -45,40 +49,40 @@ export function HowToUseDialog() {
             variant="text"
             type="button"
             autoFocus
-            onClick={closeDialog}
+            onClick={() => closeDialog()}
           >
             Close guide ×
           </Button>
           <p className="eyebrow">A quick guide</p>
           <h2 id="how-to-use-title">Plan the last link to your station</h2>
           <p className="how-to-use-dialog__lede">
-            Use <LastLinkLogo variant="wordmark" /> to answer one practical question: can you
-            reach a TfL station before the time you need to be there? It checks the station-arrival
-            route and explains the time, walking, changes and safety margin behind the answer.
+            Can you reach your station in time? Check a station-arrival route using TfL evidence,
+            then review the walking, changes and time to spare.
           </p>
 
           <ol className="how-to-use-dialog__steps">
             <li>
-              <strong>Tell us where you are</strong>
-              <span>Choose your starting Tube station from the TfL suggestions.</span>
-            </li>
-            <li>
-              <strong>Choose the station you need</strong>
-              <span>Select the Tube station you need from the TfL suggestions. Use Swap stations to reverse the two stations.</span>
+              <strong>Choose your Tube stations</strong>
+              <span>Type to filter the TfL list. Choose your starting station and the station to reach.</span>
             </li>
             <li>
               <strong>Set your deadline</strong>
               <span>
-                Choose when you need to be at the destination. Past times are unavailable; use a
-                quick choice such as In 30 minutes or In 1 hour, then add extra time with Safety
-                margin.
+                Choose when you need to be at the destination, then add extra time with Safety margin.
               </span>
             </li>
             <li>
-              <strong>Check my route</strong>
-              <span>Review the assessment, route legs and the time left after your buffer.</span>
+              <strong>Check and read the route</strong>
+              <span>Review the answer and route steps. This is an estimate, not live tracking.</span>
             </li>
           </ol>
+
+          <Button variant="primary" type="button" onClick={() => closeDialog()}>
+            Got it, plan my journey
+          </Button>
+
+          <details className="full-guide">
+            <summary>Full guide and limitations</summary>
 
           <section className="how-to-use-dialog__section">
             <h3>Read the answer</h3>
@@ -90,7 +94,7 @@ export function HowToUseDialog() {
                 <strong>Tight margin</strong> means it may work, but there is little spare time.
               </li>
               <li>
-                <strong>Not viable</strong> means the planned arrival misses your deadline.
+                <strong>Not viable</strong> means the route cannot meet the checked timing requirements.
               </li>
               <li>
                 <strong>Unable to verify</strong> means the available evidence was not strong
@@ -116,7 +120,7 @@ export function HowToUseDialog() {
               Plans are saved automatically on this browser and device when storage is available.
               Choose Start this journey to protect one plan, with space for two recent checks.
               Retrieve them in Saved journeys → Open saved plan. Opening a plan does not start it.
-              While travelling, use Back to my journey and select your current leg yourself;
+              While travelling, use Resume journey and select your current leg yourself;
               LastLink does not track your phone or train.
             </p>
             <p>
@@ -146,13 +150,11 @@ export function HowToUseDialog() {
           </section>
 
           <div className="how-to-use-dialog__actions">
-            <AppLink variant="about" href="#/about" onClick={closeDialog}>
+            <AppLink variant="about" href="#/about" onClick={() => closeDialog(false)}>
               Read more about <LastLinkLogo variant="wordmark" />
             </AppLink>
-            <Button variant="primary" type="button" onClick={closeDialog}>
-              Got it, plan my journey
-            </Button>
           </div>
+          </details>
         </div>
       </dialog>
     </>

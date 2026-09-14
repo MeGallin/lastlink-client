@@ -22,6 +22,7 @@ import {
   formatRouteService,
   getRouteChange,
   getLineColor,
+  getPrimaryRouteLineColor,
   getRouteDisplayMode,
   getRouteIconKind,
   providerScheduleMatchesItinerary,
@@ -39,14 +40,6 @@ interface JourneyAnswerProps {
   onStart?: () => void
   routeDialogRequest?: { target: string }
   onRouteDialogClose?: () => void
-}
-
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat('en-GB', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'Europe/London',
-  }).format(new Date(value))
 }
 
 function formatTime(value: string) {
@@ -124,6 +117,12 @@ export function JourneyAnswer({
   const canStart =
     !needsRecheck && !deadlineHasPassed && ['viable', 'tight'].includes(response.status)
   const answerStatus = needsRecheck && !isActive ? 'unable_to_verify' : response.status
+  const primaryRouteLineColor =
+    getPrimaryRouteLineColor(route?.legs)
+  const decisionRouteLineColor =
+    !needsRecheck && ['viable', 'tight'].includes(answerStatus)
+      ? primaryRouteLineColor
+      : undefined
   const routeDiagramNeedsFreshCheck = !isActive && (needsRecheck || deadlineHasPassed)
   const routeDiagramStatus = response.status === 'viable' ? 'Viable route' : 'Tight margin'
   const routeDiagramStatusLabel = routeDiagramNeedsFreshCheck
@@ -154,7 +153,19 @@ export function JourneyAnswer({
       aria-live="polite"
       tabIndex={-1}
     >
-      <div className={`answer-decision answer-decision--${answerStatus}`}>
+      <div
+        className={`answer-decision answer-decision--${answerStatus}`}
+        style={
+          primaryRouteLineColor
+            ? ({
+                '--route-accent': primaryRouteLineColor,
+                ...(decisionRouteLineColor
+                  ? { '--decision-accent': decisionRouteLineColor }
+                  : {}),
+              } as CSSProperties)
+            : undefined
+        }
+      >
         <div className="answer-heading">
           <div>
             <p className="eyebrow">
@@ -186,7 +197,7 @@ export function JourneyAnswer({
           </div>
         )}
         <p className="route-timing-note">
-          Checked {displayDateTime(response.checkedAt)} · London time · not refreshed automatically
+          Checked {displayDateTime(response.checkedAt)} · London time · saved estimate, not live tracking
         </p>
         {previous && (
           <p className="previous-plan-note">This is not the answer to the changed search above.</p>
@@ -200,9 +211,6 @@ export function JourneyAnswer({
         <p className={needsRecheck ? 'route-timing-note' : 'answer-summary'}>
           {needsRecheck && 'At the last check: '}
           {response.summary}
-        </p>
-        <p className="route-timing-note">
-          This result reflects the last check, not live vehicle tracking.
         </p>
         <p className="prototype-notice">
           {response.dataMode === 'fixture'
@@ -225,6 +233,18 @@ export function JourneyAnswer({
             deadline will not change automatically.
           </p>
         )}
+        <div className="next-action">
+          <strong>Next action</strong>
+          <p>
+            {isActive
+              ? 'Follow your saved plan and station signs. Your position is set by you, not tracked.'
+              : needsRecheck
+                ? 'Review the journey before setting off; the earlier departure advice is no longer current.'
+                : route && canStart
+                  ? `This plan starts at ${displayTime(route.legs[0].departureAt)}. Check the direction and allow the walking time shown.`
+                  : response.nextAction}
+          </p>
+        </div>
         {!isActive && (
           <div className="journey-actions">
             {canStart && onStart && (
@@ -274,7 +294,14 @@ export function JourneyAnswer({
       </div>
 
       {route && route.legs.length > 0 && (
-        <div className="route-summary">
+        <div
+          className="route-summary"
+          style={
+            primaryRouteLineColor
+              ? ({ '--route-accent': primaryRouteLineColor } as CSSProperties)
+              : undefined
+          }
+        >
           <div className="route-heading">
             <strong>How to get there</strong>
             <div className="route-heading-meta">
@@ -296,10 +323,6 @@ export function JourneyAnswer({
               </span>
             </div>
           </div>
-          <p className="route-timing-note">
-            Times are from the TfL Journey Planner itinerary. They are not live vehicle
-            observations.
-          </p>
           {route.fareWarning && (
             <p className="route-fare-warning" role="note">
               {route.fareWarning}
@@ -363,45 +386,15 @@ export function JourneyAnswer({
         </div>
       )}
 
-      {response.margin && route && (
-        <dl className="answer-facts">
-          <div>
-            <dt>Expected arrival</dt>
-            <dd>{formatDateTime(route.arrivalAt)}</dd>
-          </div>
-          <div>
-            <dt>Margin after buffer</dt>
-            <dd>
-              {response.margin.remainingAfterBufferMinutes < 0
-                ? `${minutes(Math.ceil(Math.abs(response.margin.remainingAfterBufferMinutes)))} short of buffer`
-                : `${minutes(Math.floor(response.margin.remainingAfterBufferMinutes))} spare`}
-            </dd>
-          </div>
-          <div>
-            <dt>Checked</dt>
-            <dd>{formatDateTime(response.checkedAt)}</dd>
-          </div>
-        </dl>
-      )}
-
-      <div className="next-action">
-        <strong>Next action</strong>
-        <p>
-          {isActive
-            ? 'Follow your saved plan and station signs. Your position is set by you, not tracked.'
-            : needsRecheck
-              ? 'Review the journey before setting off; the earlier departure advice is no longer current.'
-              : route && canStart
-                ? `This plan starts at ${displayTime(route.legs[0].departureAt)}. Check the direction and allow the walking time shown.`
-                : response.nextAction}
-        </p>
-      </div>
-
       <p className="station-only-note">{response.stationOnlyWarning}</p>
 
       {response.evidence.length > 0 && (
-        <div className="evidence-list">
-          <strong>Evidence freshness</strong>
+        <details className="evidence-list answer-evidence">
+          <summary>Evidence and freshness</summary>
+          <p className="route-timing-note">
+            Times are from the TfL Journey Planner itinerary, not live vehicle observations.
+            Saved plans are not refreshed automatically.
+          </p>
           <ul>
             {response.evidence.map((item) => (
               <li key={`${item.source}-${item.capturedAt}`}>
@@ -415,7 +408,7 @@ export function JourneyAnswer({
               </li>
             ))}
           </ul>
-        </div>
+        </details>
       )}
 
       {response.warnings.length > 0 && (
@@ -546,6 +539,7 @@ export function RouteDiagram({ route }: { route: NonNullable<JourneyResponse['ro
                       id={`route-change-${index}`}
                       tabIndex={-1}
                       className={`route-flow__change route-flow__change--${routeChange.kind}`}
+                      style={{ '--route-line-color': lineColor } as CSSProperties}
                     >
                       <div className="route-flow__change-marker" aria-hidden="true">
                         <ArrowsDownUp size={22} weight="bold" />

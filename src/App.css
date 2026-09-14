@@ -26,7 +26,8 @@ select {
 button:focus-visible,
 input:focus-visible,
 select:focus-visible,
-a:focus-visible {
+a:focus-visible,
+summary:focus-visible {
   outline: 0.2rem solid var(--focus);
   outline-offset: 0.2rem;
 }
@@ -106,6 +107,14 @@ li[tabindex='-1']:focus {
 
 .lastlink-logo__wordmark span:last-child {
   color: var(--focus);
+}
+
+.lastlink-logo--inverse .lastlink-logo__wordmark {
+  color: #fff;
+}
+
+.lastlink-logo--inverse .lastlink-logo__wordmark span:last-child {
+  color: #ffffff;
 }
 
 .lastlink-logo--wordmark {
@@ -354,10 +363,10 @@ li[tabindex='-1']:focus {
 .workspace {
   display: grid;
   flex: 1;
-  gap: 2rem;
+  gap: 1.5rem;
   width: min(100%, 76rem);
   margin: 0 auto;
-  padding: clamp(2rem, 5vw, 4rem) max(1.25rem, calc((100vw - 76rem) / 2)) 3rem;
+  padding: clamp(1.5rem, 3vw, 2.5rem) max(1.25rem, calc((100vw - 76rem) / 2)) 3rem;
 }
 
 .workspace > * {
@@ -385,6 +394,11 @@ li[tabindex='-1']:focus {
   margin: 1rem 0 0;
 }
 
+.answer-service-notices {
+  border-left-color: var(--route-accent, var(--warning));
+  background: color-mix(in srgb, var(--route-accent, var(--warning)) 8%, var(--surface));
+}
+
 .answer-service-notices ul {
   margin: 0.35rem 0 0;
   padding-left: 1.15rem;
@@ -400,26 +414,26 @@ li[tabindex='-1']:focus {
 .intro {
   display: grid;
   gap: 0.7rem;
-  padding-bottom: 1.75rem;
+  padding-bottom: 1.1rem;
   border-bottom: 1px solid var(--line);
 }
 
 .intro-heading {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
   gap: 1.5rem;
 }
 
 .intro h1,
 .page-heading h1 {
-  max-width: 17ch;
+  max-width: 25ch;
   margin: 0;
   color: var(--text);
-  font-size: clamp(2.2rem, 5vw, 3.6rem);
+  font-size: clamp(2rem, 4vw, 3rem);
   font-weight: 850;
   letter-spacing: -0.065em;
-  line-height: 0.98;
+  line-height: 1.06;
 }
 
 .intro-copy,
@@ -590,7 +604,50 @@ li[tabindex='-1']:focus {
 }
 
 .guide-close {
-  float: right;
+  position: sticky;
+  top: 0;
+  display: flex;
+  width: fit-content;
+  margin-left: auto;
+  background: var(--surface);
+}
+
+.full-guide {
+  margin-top: 1.25rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid var(--line);
+}
+
+.full-guide > summary,
+.protected-plan-details > summary,
+.answer-evidence > summary {
+  min-height: 2.75rem;
+  padding: 0.65rem 0;
+  color: var(--text);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.protected-plan-details {
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  padding: 0.4rem 0;
+}
+
+.protected-plan-details > summary span {
+  display: block;
+  margin-top: 0.25rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.protected-plan-details[open] > summary {
+  margin-bottom: 1rem;
+}
+
+.plan-details--expanded > summary {
+  display: none;
 }
 
 .journey-panel,
@@ -601,7 +658,7 @@ li[tabindex='-1']:focus {
 }
 
 .journey-panel {
-  padding: 1.8rem 0 2rem;
+  padding: 0.35rem 0 1.5rem;
   border-bottom: 1px solid var(--line);
 }
 
@@ -637,7 +694,7 @@ li[tabindex='-1']:focus {
 
 .journey-form {
   display: grid;
-  gap: 1.35rem;
+  gap: 1.1rem;
 }
 
 .how-to-use-dialog,
@@ -737,7 +794,7 @@ li[tabindex='-1']:focus {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  min-height: 2.75rem;
+  min-height: 2rem;
 }
 
 .field-label-row label,
@@ -748,7 +805,7 @@ li[tabindex='-1']:focus {
 .field > label {
   display: flex;
   align-items: center;
-  min-height: 2.75rem;
+  min-height: 2rem;
 }
 
 .field input,
@@ -908,11 +965,27 @@ li[tabindex='-1']:focus {
 }
 
 .station-picker__options {
-  max-height: 18rem;
+  max-height: min(18rem, 40dvh);
   margin: 0;
   padding: 0.35rem;
   overflow-y: auto;
+  overscroll-behavior: contain;
   list-style: none;
+}
+
+.station-picker__hint {
+  margin: 0;
+  padding: 0.55rem 0.85rem;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  background: var(--surface-subtle);
+  font-size: 0.78rem;
+}
+
+.station-picker__selected {
+  display: block;
+  color: var(--muted);
+  font-size: 0.72rem;
 }
 
 .station-picker__options li {
@@ -1110,15 +1183,16 @@ button:disabled {
 }
 
 .saved-route {
+  --saved-route-accent: var(--line-strong);
   display: grid;
   gap: 1.15rem;
   padding: 1.45rem 0 1.55rem 1rem;
   border-bottom: 1px solid var(--line);
-  border-left: 0.3rem solid var(--line-strong);
+  border-left: 0.3rem solid var(--saved-route-accent);
 }
 
 .saved-route--current {
-  border-left-color: var(--focus);
+  border-left-color: var(--saved-route-accent);
 }
 
 .saved-route__main {
@@ -1187,6 +1261,32 @@ button:disabled {
   gap: 0.65rem;
 }
 
+.saved-route__main .saved-route__freshness {
+  max-width: 48ch;
+  margin: 0.6rem 0;
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.45;
+}
+
+.about-index {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.about-index > span {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.about-index button {
+  min-height: 2.75rem;
+}
+
 .saved-route__actions .secondary-action {
   min-height: 2.85rem;
 }
@@ -1234,7 +1334,7 @@ button:disabled {
 }
 
 .about-sections section {
-  padding: 1.8rem 0;
+  padding: 1.35rem 0;
   border-bottom: 1px solid var(--line);
 }
 
@@ -1286,7 +1386,7 @@ button:disabled {
   padding: 1.6rem clamp(1rem, 3vw, 1.6rem) 1.45rem;
   border-left: 0.4rem solid var(--decision-accent);
   border-radius: 0 var(--radius-panel) var(--radius-panel) 0;
-  background: var(--surface-subtle);
+  background: color-mix(in srgb, var(--decision-accent) 7%, var(--surface));
 }
 
 .answer-decision--tight {
@@ -1308,7 +1408,7 @@ button:disabled {
 .answer-decision .answer-heading h2 {
   max-width: 20ch;
   margin: 0;
-  color: var(--decision-accent);
+  color: color-mix(in srgb, var(--decision-accent) 55%, #000);
   font-size: clamp(1.85rem, 4vw, 2.7rem);
   font-weight: 850;
   letter-spacing: -0.06em;
@@ -1530,8 +1630,12 @@ button:disabled {
   max-width: 48rem;
   margin: 0.85rem 0 0;
   padding: 0.75rem 0.9rem;
-  border-left: 0.25rem solid var(--warning);
-  background: #fbf8ed;
+  border-left: 0.25rem solid var(--route-accent, var(--route-line-color, var(--warning)));
+  background: color-mix(
+    in srgb,
+    var(--route-accent, var(--route-line-color, var(--warning))) 8%,
+    var(--surface)
+  );
   color: var(--text);
   font-size: 0.86rem;
   line-height: 1.5;
@@ -1543,8 +1647,8 @@ button:disabled {
 }
 
 .route-step-notice--planned_work {
-  border-left-color: var(--line-strong);
-  background: var(--surface-subtle);
+  border-left-color: var(--route-line-color, var(--line-strong));
+  background: color-mix(in srgb, var(--route-line-color, var(--line-strong)) 8%, var(--surface));
 }
 
 .route-step-notice strong {
@@ -1622,7 +1726,7 @@ button:disabled {
 
 .route-step-details--has-notices > summary,
 .route-step-details--has-notices .route-disclosure-chevron {
-  color: var(--warning);
+  color: var(--route-line-color, var(--warning));
 }
 
 .route-alternatives ul,
@@ -1722,7 +1826,7 @@ button:disabled {
 
 .route-step-timing--schedule .route-step-time-label,
 .route-step-time-note--schedule {
-  color: var(--warning);
+  color: var(--route-line-color, var(--warning));
 }
 
 .route-flow {
@@ -1802,13 +1906,13 @@ button:disabled {
   width: 2.35rem;
   min-height: 2.35rem;
   place-items: center;
-  color: var(--warning);
+  color: var(--route-line-color, var(--warning));
 }
 
 .route-flow__change-detail {
   padding: 0.8rem 0.9rem;
-  border-left: 0.25rem solid var(--warning);
-  background: #fbf8ed;
+  border-left: 0.25rem solid var(--route-line-color, var(--warning));
+  background: color-mix(in srgb, var(--route-line-color, var(--warning)) 8%, var(--surface));
   color: var(--text);
 }
 
@@ -2042,30 +2146,6 @@ button:disabled {
   text-transform: uppercase;
 }
 
-.answer-facts {
-  display: grid;
-  gap: 0.85rem;
-  margin: 1.8rem 0;
-  padding: 1rem 0;
-  border-block: 1px solid var(--line);
-}
-
-.answer-facts div {
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.answer-facts dt {
-  color: var(--muted);
-}
-
-.answer-facts dd {
-  margin: 0;
-  font-weight: 800;
-  text-align: right;
-}
-
 .next-action {
   margin-bottom: 1.25rem;
   padding-left: 1rem;
@@ -2131,11 +2211,12 @@ button:disabled {
 }
 
 .current-journey {
+  --route-accent: var(--focus);
   position: relative;
   display: grid;
   gap: 1.2rem;
   padding: 1.35rem 1.25rem;
-  border-left: 0.35rem solid var(--focus);
+  border-left: 0.35rem solid var(--route-accent);
   border-radius: 0 var(--radius-panel) var(--radius-panel) 0;
   background: var(--surface-subtle);
 }
@@ -2151,6 +2232,12 @@ button:disabled {
 
 .current-journey__notices .essential-notice {
   margin: 0;
+  border-left-color: var(--route-line-color, var(--route-accent, var(--warning)));
+  background: color-mix(
+    in srgb,
+    var(--route-line-color, var(--route-accent, var(--warning))) 8%,
+    var(--surface)
+  );
 }
 
 .current-journey__notices .essential-notice p {
@@ -2173,6 +2260,7 @@ button:disabled {
 
 .current-journey h2 {
   margin: 0;
+  color: color-mix(in srgb, var(--route-accent) 62%, var(--text));
   font-size: clamp(1.5rem, 3vw, 2.1rem);
   letter-spacing: -0.05em;
   line-height: 1;
@@ -2215,15 +2303,25 @@ button:disabled {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.55rem;
+  align-items: stretch;
   margin: 0;
 }
 
 .current-journey__controls .journey-actions > button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  min-height: 2.9rem;
-  padding: 0.65rem 0.8rem;
+  height: 4rem;
+  min-height: 4rem;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--line-strong);
   border-color: var(--line-strong);
   background: var(--surface);
+  line-height: 1.2;
+  text-align: center;
+  white-space: normal;
+  overflow-wrap: anywhere;
   text-decoration: none;
 }
 
@@ -2233,30 +2331,38 @@ button:disabled {
   color: var(--accent-strong);
 }
 
-.current-journey__controls .journey-actions > button:last-child {
-  border-color: color-mix(in srgb, var(--danger) 58%, var(--line));
+.current-journey__controls .journey-actions .end-journey-action {
+  border-color: color-mix(in srgb, var(--danger) 58%, var(--line-strong));
+  background: var(--surface);
   color: var(--danger);
 }
 
 .active-return {
-  position: sticky;
-  bottom: 0;
-  z-index: 8;
+  --route-accent: var(--focus);
   display: flex;
   flex-wrap: wrap;
   gap: 0.6rem 1rem;
   align-items: center;
   justify-content: space-between;
-  padding: 0.7rem max(1rem, calc((100% - 74rem) / 2));
-  padding-bottom: max(0.7rem, env(safe-area-inset-bottom));
-  background: var(--action);
-  color: #fff;
-  box-shadow: 0 -0.6rem 1.4rem rgb(20 38 50 / 0.12);
+  padding: 0.85rem 1rem;
+  border: 1px solid var(--line);
+  border-left: 0.25rem solid var(--route-accent);
+  border-radius: var(--radius-control);
+  background: var(--surface-subtle);
+  color: var(--text);
 }
 
-.active-return span {
+.active-return__identity {
   flex: 1 1 13rem;
+  min-width: 0;
+  overflow-wrap: anywhere;
   font-size: 0.86rem;
+}
+
+.active-return__identity span {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--muted);
 }
 
 .active-return strong {
@@ -2267,7 +2373,7 @@ button:disabled {
   flex: 0 1 auto;
   min-height: 2.75rem;
   padding: 0.55rem 0.85rem;
-  border: 1px solid #fff;
+  border: 1px solid var(--line-strong);
   border-radius: var(--radius-control);
   background: #fff;
   color: var(--action);
@@ -2276,7 +2382,7 @@ button:disabled {
 }
 
 .active-return button:focus-visible {
-  outline-color: #fff;
+  outline-color: var(--focus);
 }
 
 .footer-note {
@@ -2377,17 +2483,18 @@ button:disabled {
   }
 
   .workspace {
-    gap: 1.6rem;
-    padding-top: 1.5rem;
+    gap: 1.1rem;
+    padding-top: 1.1rem;
   }
 
   .intro-heading {
     align-items: flex-start;
+    gap: 0.5rem;
   }
 
   .intro h1,
   .page-heading h1 {
-    font-size: clamp(2rem, 9vw, 2.8rem);
+    font-size: clamp(1.85rem, 7.5vw, 2.5rem);
   }
 
   .how-to-use-trigger {
@@ -2415,7 +2522,7 @@ button:disabled {
   }
 
   .journey-panel {
-    padding-top: 1.4rem;
+    padding-top: 0.35rem;
   }
 
   .new-journey-prompt {
@@ -2472,7 +2579,7 @@ button:disabled {
     align-items: stretch;
   }
 
-  .active-return span,
+  .active-return__identity,
   .active-return button {
     flex-basis: 100%;
   }

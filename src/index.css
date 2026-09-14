@@ -7,22 +7,22 @@
 
   --page: #ffffff;
   --surface: #ffffff;
-  --surface-subtle: #f4f7f9;
-  --surface-emphasis: #e7eef3;
+  --surface-subtle: #f3f3f2;
+  --surface-emphasis: #e6e7e6;
   --surface-raised: #ffffff;
   --surface-muted: var(--surface-subtle);
   --ink: #142632;
-  --ink-muted: #53636e;
-  --ink-quiet: #74838d;
+  --ink-muted: #4f5a60;
+  --ink-quiet: #657077;
   --text: var(--ink);
   --muted: var(--ink-muted);
   --quiet: var(--ink-quiet);
-  --line: #d4dde3;
-  --line-strong: #97a6b0;
+  --line: #d0d2d2;
+  --line-strong: #838d93;
   --action: #1c3e53;
   --accent: var(--action);
   --accent-strong: #ffffff;
-  --focus: #1b75a6;
+  --focus: #0019a8;
   --viable: #1b714b;
   --tight: #93650a;
   --warning: var(--tight);
@@ -44,4 +44,34 @@
 
 html {
   background: var(--page);
+  scrollbar-color: var(--action) var(--surface-subtle);
+  scrollbar-width: thin;
+}
+
+body {
+  scrollbar-color: var(--action) var(--surface-subtle);
+  scrollbar-width: thin;
+}
+
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 0.72rem;
+  height: 0.72rem;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: var(--surface-subtle);
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  border: 0.16rem solid var(--surface-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--action);
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--action) 84%, #000000);
 }

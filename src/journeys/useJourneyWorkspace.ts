@@ -28,6 +28,7 @@ import {
   validateJourneyInput,
 } from './journey-presentation'
 import { createRequestGate } from './request-gate'
+import type { JourneyFocusIntent } from './journey-focus'
 
 export const newJourneyInput = (): JourneyInput => ({
   originName: '',
@@ -62,6 +63,7 @@ export function useJourneyWorkspace() {
     input: JourneyInput
   } | null>(null)
   const [focusVersion, setFocusVersion] = useState(0)
+  const [focusIntent, setFocusIntent] = useState<JourneyFocusIntent>('page')
   const [editing, setEditing] = useState(true)
   const gate = useRef(createRequestGate())
   useEffect(() => {
@@ -190,6 +192,7 @@ export function useJourneyWorkspace() {
       setShown(snapshot)
       setReturnJourneyFrom(null)
       setDraft((current) => draftAfterCheck(current, snapshot.input, source))
+      setFocusIntent('result')
       setFocusVersion((value) => value + 1)
     } catch (failure) {
       if (ticket.isCurrent())
@@ -210,6 +213,7 @@ export function useJourneyWorkspace() {
     setShown(journey)
     setReturnJourneyFrom(null)
     setEditing(false)
+    setFocusIntent('result')
     setFocusVersion((value) => value + 1)
   }
   function planReturnJourney(journey: SavedJourney) {
@@ -232,6 +236,7 @@ export function useJourneyWorkspace() {
       arriveBy,
     })
     setEditing(true)
+    setFocusIntent('form')
     setFocusVersion((value) => value + 1)
   }
   function beginJourney(journey: SavedJourney, expectedActiveId: string | null) {
@@ -267,6 +272,8 @@ export function useJourneyWorkspace() {
       setDraft(journeyDraft(input))
     }
     setEditing(true)
+    setFocusIntent('form')
+    setFocusVersion((value) => value + 1)
   }
   function startNewJourney() {
     cancelCheck()
@@ -280,6 +287,8 @@ export function useJourneyWorkspace() {
     defaultDeadlineRollingRef.current = true
     setDraft(next)
     setEditing(true)
+    setFocusIntent('form')
+    setFocusVersion((value) => value + 1)
   }
   return {
     library,
@@ -291,6 +300,7 @@ export function useJourneyWorkspace() {
     error,
     returnJourneyFrom,
     focusVersion,
+    focusIntent,
     editing,
     active: library.journeys.find((item) => item.id === library.active?.id) ?? null,
     editDraft,

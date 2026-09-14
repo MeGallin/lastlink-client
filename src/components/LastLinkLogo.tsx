@@ -5,6 +5,7 @@ interface LastLinkLogoProps {
   href?: string
   className?: string
   onHome?: () => void
+  inverse?: boolean
 }
 
 export function LastLinkLogo({
@@ -12,8 +13,9 @@ export function LastLinkLogo({
   className,
   href = '#/',
   onHome,
+  inverse = false,
 }: LastLinkLogoProps) {
-  const classes = ['lastlink-logo', `lastlink-logo--${variant}`, className]
+  const classes = ['lastlink-logo', `lastlink-logo--${variant}`, inverse && 'lastlink-logo--inverse', className]
     .filter(Boolean)
     .join(' ')
 

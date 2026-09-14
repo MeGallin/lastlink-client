@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react'
+import { useEffect } from 'react'
 import { Button } from './ui'
+import { useDialogSurface } from './useDialogSurface'
 export function ConfirmDialog({
   title,
   message,
@@ -13,24 +14,25 @@ export function ConfirmDialog({
   onConfirm: () => void
   onCancel: () => void
 }) {
-  const dialog = useRef<HTMLDialogElement>(null)
+  const { dialogRef, open, close, finish } = useDialogSurface()
   useEffect(() => {
-    dialog.current?.showModal()
-  }, [])
+    open()
+  }, [open])
   return (
     <dialog
-      ref={dialog}
+      ref={dialogRef}
       className="confirm-dialog"
       aria-labelledby="confirm-title"
-      onCancel={onCancel}
+      onCancel={() => { close(); onCancel() }}
+      onClose={() => finish()}
     >
       <h2 id="confirm-title">{title}</h2>
       <p>{message}</p>
       <div className="journey-actions">
-        <Button type="button" variant="secondary" autoFocus onClick={onCancel}>
+        <Button type="button" variant="secondary" autoFocus onClick={() => { close(); onCancel() }}>
           Cancel
         </Button>
-        <Button type="button" variant="primary" onClick={onConfirm}>
+        <Button type="button" variant="primary" onClick={() => { close(); onConfirm() }}>
           {confirmLabel}
         </Button>
       </div>

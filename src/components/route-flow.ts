@@ -165,6 +165,17 @@ export function getLineColor(lineName?: string) {
   return (key && lineColors[key]) || 'var(--accent)'
 }
 
+export function getPrimaryRouteLineColor(
+  legs?: Array<Pick<RouteLeg, 'mode' | 'lineName'>>,
+) {
+  const firstTubeLeg = legs?.find(
+    (leg) => getRouteDisplayMode(leg.mode, leg.lineName) === 'tube' && leg.lineName,
+  )
+  if (!firstTubeLeg) return undefined
+  const color = getLineColor(firstTubeLeg.lineName)
+  return color === 'var(--accent)' ? undefined : color
+}
+
 export function getRouteDisplayMode(
   mode: string,
   lineName?: string,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type CSSProperties } from 'react'
 import type { SavedJourney } from '../journeys/journey-store'
 import {
   displayDateTime,
@@ -6,12 +6,14 @@ import {
   routeName,
   routeServices,
 } from '../journeys/journey-presentation'
+import { getPrimaryRouteLineColor } from '../components/route-flow'
 import { AppLink, Button } from '../components/ui'
 
 export function SavedItemsView({
   journeys,
   activeId,
   onResume,
+  onReview,
   onPlanReturn,
   onRemove,
   onEnd,
@@ -19,6 +21,7 @@ export function SavedItemsView({
   journeys: SavedJourney[]
   activeId: string | null
   onResume: (journey: SavedJourney) => void
+  onReview: (journey: SavedJourney) => void
   onPlanReturn: (journey: SavedJourney) => void
   onRemove: (journey: SavedJourney) => void
   onEnd: (journey: SavedJourney) => void
@@ -55,66 +58,81 @@ export function SavedItemsView({
             {activeId ? '1 protected journey, up to 2 recent checks' : 'No journey started'}
           </p>
           <ul className="saved-routes-list">
-            {journeys.map((journey) => (
-              <li
-                key={journey.id}
-                className={'saved-route' + (journey.id === activeId ? ' saved-route--current' : '')}
-              >
-                <div className="saved-route__main">
-                  <div className="saved-route__heading">
-                    <p className="eyebrow">
-                      {journey.id === activeId
-                        ? 'Current journey · protected'
-                        : 'Recent check · not started'}
+            {journeys.map((journey) => {
+              const current = journey.id === activeId
+              const stale = isSavedJourneyStale(journey, now)
+              const routeAccent = getPrimaryRouteLineColor(journey.response.route?.legs)
+              return (
+                <li
+                  key={journey.id}
+                  className={'saved-route' + (journey.id === activeId ? ' saved-route--current' : '')}
+                  style={
+                    routeAccent
+                      ? ({ '--saved-route-accent': routeAccent } as CSSProperties)
+                      : undefined
+                  }
+                >
+                  <div className="saved-route__main">
+                    <div className="saved-route__heading">
+                      <p className="eyebrow">
+                        {journey.id === activeId
+                          ? 'Current journey · protected'
+                          : 'Recent check · not started'}
+                      </p>
+                      {stale && (
+                        <span
+                          className="saved-route__freshness-badge"
+                          aria-label="This saved plan needs a fresh check"
+                        >
+                          Needs fresh check
+                        </span>
+                      )}
+                    </div>
+                    <strong>{routeName(journey.input)}</strong>
+                    <p>{routeServices(journey.response)}</p>
+                    <p className="saved-route__freshness">
+                      {stale
+                        ? 'This plan is old or its planned start has passed. Review the deadline before checking again.'
+                        : 'Saved at the last check. Recheck before travel if conditions have changed.'}
                     </p>
-                    {isSavedJourneyStale(journey, now) && (
-                      <span
-                        className="saved-route__freshness-badge"
-                        aria-label="This saved plan needs a fresh check"
-                      >
-                        Needs fresh check
-                      </span>
-                    )}
+                    <small>
+                      Deadline {displayDateTime(journey.input.arriveBy)} ·{' '}
+                      {journey.input.safetyBufferMinutes}-minute margin
+                    </small>
+                    <small>
+                      Expected arrival {displayDateTime(journey.response.route!.arrivalAt)}
+                    </small>
+                    <small>
+                      Checked {displayDateTime(journey.response.checkedAt)} · not refreshed
+                    </small>
                   </div>
-                  <strong>{routeName(journey.input)}</strong>
-                  <p>{routeServices(journey.response)}</p>
-                  <small>
-                    Deadline {displayDateTime(journey.input.arriveBy)} ·{' '}
-                    {journey.input.safetyBufferMinutes}-minute margin
-                  </small>
-                  <small>
-                    Expected arrival {displayDateTime(journey.response.route!.arrivalAt)}
-                  </small>
-                  <small>
-                    Checked {displayDateTime(journey.response.checkedAt)} · not refreshed
-                  </small>
-                </div>
-                <div className="saved-route__actions">
-                  <Button
-                    type="button"
-                    variant="primary"
-                    className="saved-route__return-action"
-                    onClick={() => onPlanReturn(journey)}
-                  >
-                    Plan return journey
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    onClick={() => onResume(journey)}
-                  >
-                    {journey.id === activeId ? 'Return to my journey' : 'Open saved plan'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="text"
-                    onClick={() => (journey.id === activeId ? onEnd(journey) : onRemove(journey))}
-                  >
-                    {journey.id === activeId ? 'End journey' : 'Remove'}
-                  </Button>
-                </div>
-              </li>
-            ))}
+                  <div className="saved-route__actions">
+                    <Button
+                      type="button"
+                      variant="primary"
+                      onClick={() => current || !stale ? onResume(journey) : onReview(journey)}
+                    >
+                      {current ? 'Resume journey' : stale ? 'Review and recheck' : 'Open saved plan'}
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="secondary"
+                      className="saved-route__return-action"
+                      onClick={() => onPlanReturn(journey)}
+                    >
+                      Plan return journey
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="text"
+                      onClick={() => (journey.id === activeId ? onEnd(journey) : onRemove(journey))}
+                    >
+                      {journey.id === activeId ? 'End journey' : 'Remove'}
+                    </Button>
+                  </div>
+                </li>
+              )
+            })}
           </ul>
         </>
       )}

@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { runInNewContext } from "node:vm";
+import ts from "typescript";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { createServer } from "vite";
@@ -41,6 +43,17 @@ try {
   const { StationCombobox } = await server.ssrLoadModule(
     "/src/components/StationCombobox.tsx",
   );
+  const { journeyFocusTarget } = await server.ssrLoadModule(
+    "/src/journeys/journey-focus.ts",
+  );
+  assert.equal(journeyFocusTarget("result", true, true, false), "answer",
+    "A successful draft check focuses its result even while the form remains editable");
+  assert.equal(journeyFocusTarget("form", true, true, false), "form",
+    "Explicit review and return planning retain requested field focus");
+  assert.equal(journeyFocusTarget("form", true, false, false), "form",
+    "A deliberate new journey focuses its requested field");
+  assert.equal(journeyFocusTarget("result", false, true, true), "current");
+  assert.equal(journeyFocusTarget("page", true, false, false), "page");
 
   const aboutHtml = renderToStaticMarkup(createElement(AboutView));
   const aboutText = visibleText(aboutHtml);
@@ -56,16 +69,18 @@ try {
   const howToHtml = renderToStaticMarkup(createElement(HowToUseDialog));
   const howToText = visibleText(howToHtml);
   assert.match(howToText, /How to use last\s+link/);
-  assert.match(howToText, /Choose your starting Tube station/);
-  assert.match(howToText, /Choose the station you need/);
-  assert.match(howToText, /Check my route/);
+  assert.match(howToText, /Choose your Tube stations/);
+  assert.match(howToText, /starting station and the station to reach/);
+  assert.match(howToText, /Check and read the route/);
+  assert.match(howToHtml, /<details class="full-guide"><summary>Full guide and limitations/);
+  assert.ok(howToHtml.indexOf("Got it, plan my journey") < howToHtml.indexOf('class="full-guide"'));
   assert.match(howToText, /Read the answer/);
   assert.match(howToText, /saved automatically on this browser and device/);
   assert.match(howToText, /Start this journey/);
   assert.match(howToText, /Saved journeys.*Open saved plan/);
   assert.match(howToText, /Plan return journey.*reverses the stations/);
   assert.match(howToText, /Arrive back by/);
-  assert.match(howToText, /Back to my journey/);
+  assert.match(howToText, /Resume journey/);
   assert.match(howToText, /no account sync or automatic refresh/i);
   assert.match(howToText, /Read more about last\s+link/);
 
@@ -75,6 +90,7 @@ try {
   assert.match(mobileNavHtml, /Open navigation/);
   assert.match(mobileNavHtml, /Saved journeys/);
   assert.match(mobileNavHtml, /Where do you want to go\?/);
+  assert.match(mobileNavHtml, /lastlink-logo--inverse/);
 
   const stationPickerHtml = renderToStaticMarkup(
     createElement(StationCombobox, {
@@ -95,6 +111,9 @@ try {
     stationPickerHtml,
     /Waterloo/,
   );
+  assert.match(stationPickerHtml, /matching Tube stations/);
+  assert.match(stationPickerHtml, /Selected ✓/);
+  assert.match(aboutHtml, /aria-label="On this page"/);
 
   const siteHeaderHtml = renderToStaticMarkup(
     createElement(SiteHeader, { currentPage: "journey" }),
@@ -128,6 +147,7 @@ try {
       journeys,
       activeId: journeys[0].id,
       onResume: () => {},
+      onReview: () => {},
       onPlanReturn: () => {},
       onRemove: () => {},
       onEnd: () => {},
@@ -135,11 +155,13 @@ try {
   );
   assert.match(savedHtml, /Saved journeys/);
   assert.match(savedHtml, /Waterloo.*Stratford/);
-  assert.match(savedHtml, /Return to my journey/);
+  assert.match(savedHtml, /Resume journey/);
+  assert.ok(savedHtml.indexOf("Resume journey") < savedHtml.indexOf("Plan return journey"));
   assert.match(savedHtml, /Plan return journey/);
   assert.match(savedHtml, /On this browser and device/);
   assert.match(savedHtml, /Deadline.*margin/);
   assert.match(savedHtml, /protected/);
+  assert.match(savedHtml, /--saved-route-accent:\s*#a0a5a9/);
   assert.doesNotMatch(savedHtml, /saved-route__freshness-badge/);
 
   const staleHtml = renderToStaticMarkup(
@@ -152,6 +174,7 @@ try {
       ],
       activeId: null,
       onResume: () => {},
+      onReview: () => {},
       onPlanReturn: () => {},
       onRemove: () => {},
       onEnd: () => {},
@@ -159,12 +182,16 @@ try {
   );
   assert.match(staleHtml, /saved-route__freshness-badge/);
   assert.match(staleHtml, /Needs fresh check/);
+  assert.match(staleHtml, /Review and recheck/);
+  assert.match(staleHtml, /Review the deadline before checking again/);
+  assert.doesNotMatch(staleHtml, /Resume journey/);
 
   const emptyHtml = renderToStaticMarkup(
     createElement(SavedItemsView, {
       journeys: [],
       activeId: null,
       onResume: () => {},
+      onReview: () => {},
       onPlanReturn: () => {},
       onRemove: () => {},
     }),
@@ -210,6 +237,8 @@ try {
   const visibleNoticeIndex = answerWithNotice.indexOf(
     "answer-service-notices",
   );
+  assert.match(answerWithNotice, /--decision-accent:\s*#000000/);
+  assert.match(answerWithNotice, /--route-accent:\s*#000000/);
   const routeDialogIndex = answerWithNotice.indexOf("<dialog");
   assert.ok(visibleNoticeIndex >= 0 && visibleNoticeIndex < routeDialogIndex);
   for (const message of [
@@ -262,6 +291,31 @@ try {
     }),
   );
   assert.match(waitingView, /Checking TfL: Waterloo.*Stratford/);
+  const changedDraftError = renderToStaticMarkup(createElement(JourneyView, {
+    workspace: {
+      editing: true, shown: sampleJourney,
+      draft: { ...sampleInput, originName: "Paddington" },
+      error: { input: { ...sampleInput, originName: "Paddington" }, message: "Try again shortly." },
+      pending: null, active: null, library: { active: null },
+    },
+    answerRef: { current: null }, onStart() {}, onEnd() {}, onExplore() {}, onStartNew() {},
+  }));
+  assert.match(changedDraftError, /Your previous plan, Waterloo.*Stratford, is unchanged\./);
+  assert.match(changedDraftError, /Your previous result is hidden while you edit this search/);
+  assert.doesNotMatch(changedDraftError, /unchanged below|id="answer-title"/);
+  const activeView = renderToStaticMarkup(createElement(JourneyView, {
+    workspace: {
+      editing: false, shown: sampleJourney, draft: sampleInput, error: null,
+      pending: null, active: sampleJourney,
+      library: { active: { id: sampleJourney.id, legIndex: 0 } },
+    },
+    answerRef: { current: null }, onStart() {}, onEnd() {}, onExplore() {}, onStartNew() {},
+  }));
+  assert.match(activeView, /<details class="protected-plan-details"><summary>Plan details/);
+  assert.ok(activeView.indexOf('id="current-journey"') < activeView.indexOf('class="protected-plan-details"'));
+  assert.ok(activeView.indexOf('class="protected-plan-details"') < activeView.indexOf('class="new-journey-prompt"'));
+  assert.match(activeView, /View current step/);
+  assert.match(activeView, /--route-accent:\s*#000000/);
   for (const nextLine of ["Northern", "Bakerloo"]) {
     const currentHtml = renderToStaticMarkup(
       createElement(CurrentJourney, {
@@ -364,17 +418,91 @@ try {
     /<SiteHeader currentPage=\{page\} onJourneyHome=\{startNewJourney\} \/>/,
   );
   assert.match(formSource, /Choose a Tube station from the TfL list/);
-  assert.match(formSource, /Tube station only — choose from the TfL list/);
+  assert.match(formSource, /Type to filter, or browse the Tube station list/);
   assert.match(formSource, /futureDeadlinePresets/);
   assert.match(formSource, /min={minimumArriveBy}/);
   assert.match(formSource, /Quick arrival time choices/);
   assert.doesNotMatch(formSource, /onInput=/);
   assert.match(workspaceSource, /defaultDeadlineRef/);
   assert.match(workspaceSource, /defaultDeadlineRollingRef/);
+  assert.match(workspaceSource, /setDraft\(\(current\) => draftAfterCheck\(current, snapshot.input, source\)\)\s+setFocusIntent\('result'\)/);
+  assert.match(appSource, /journeyFocusTarget\(w.focusIntent, w.editing/);
+  for (const name of ["planReturnJourney", "explore", "startNewJourney"]) {
+    const body = workspaceSource.split(`function ${name}(`)[1]?.split(/\n  (?:async )?function /)[0];
+    assert.match(body, /setFocusIntent\('form'\)/);
+    assert.match(body, /setFocusVersion/);
+  }
   assert.doesNotMatch(comboboxSource, /requestPlaceSearch/);
   assert.doesNotMatch(comboboxSource, /address|landmark|free-form/i);
   assert.match(appSource, /page === 'saved'/);
   assert.match(appSource, /page === 'about'/);
+  assert.ok(appSource.indexOf('className="active-return"') > appSource.indexOf('className="workspace"'));
+  assert.ok(appSource.indexOf('className="active-return"') < appSource.indexOf('<JourneyView'));
+  const cssSource = readFileSync(new URL("../src/App.css", import.meta.url), "utf8");
+  const resumeRule = cssSource.match(/\.active-return \{([^}]+)\}/)?.[1];
+  assert.ok(resumeRule);
+  assert.doesNotMatch(resumeRule, /position:|bottom:|z-index:/);
+  assert.match(cssSource, /prefers-reduced-motion: reduce/);
+  assert.match(cssSource, /summary:focus-visible/);
+  const dialogSource = readFileSync(new URL("../src/components/useDialogSurface.ts", import.meta.url), "utf8");
+  assert.match(dialogSource, /document\.activeElement/);
+  assert.match(dialogSource, /target\.isConnected/);
+  assert.match(dialogSource, /destination\?\.focus/);
+  assert.match(dialogSource, /useEffect\(\(\) => unlock, \[unlock\]\)/);
+  assert.doesNotMatch(dialogSource, /useEffect\([^\n]*finish\(false\)/);
+
+  // Execute the real shared hook against a tiny DOM/hook lifecycle double.
+  // Native close intentionally does not restore focus, so these assertions test
+  // our opener handling across setup -> cleanup -> setup, not browser fallback.
+  const dialogJs = ts.transpileModule(dialogSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  for (const surface of ["guide", "route", "mobile navigation", "confirmation"]) {
+    const setups = [];
+    const document = { body: { style: { overflow: "auto" } }, activeElement: null };
+    class Element {
+      isConnected = true;
+      getClientRects() { return [{}]; }
+      focus() { document.activeElement = this; }
+    }
+    const opener = new Element();
+    document.activeElement = opener;
+    const module = { exports: {} };
+    runInNewContext(dialogJs, {
+      exports: module.exports,
+      require(name) {
+        assert.equal(name, "react");
+        return {
+          useRef: (current) => ({ current }),
+          useCallback: (callback) => callback,
+          useEffect: (setup) => setups.push(setup),
+        };
+      },
+      document,
+      HTMLElement: Element,
+      requestAnimationFrame: (callback) => callback(),
+    });
+    const hook = module.exports.useDialogSurface();
+    hook.dialogRef.current = {
+      open: false,
+      showModal() { this.open = true; document.activeElement = new Element(); },
+      close() { this.open = false; document.activeElement = document.body; },
+    };
+    const cleanups = setups.map((setup) => setup());
+    hook.open();
+    cleanups.forEach((cleanup) => cleanup());
+    assert.equal(document.body.style.overflow, "auto", `${surface}: cleanup releases scroll lock`);
+    const replayCleanups = setups.map((setup) => setup());
+    hook.open();
+    assert.equal(document.body.style.overflow, "hidden", `${surface}: replay locks open dialog`);
+    hook.close();
+    assert.equal(document.activeElement, opener, `${surface}: replay preserves original opener`);
+    assert.equal(document.body.style.overflow, "auto", `${surface}: close releases scroll lock`);
+    opener.focus();
+    hook.open();
+    replayCleanups.forEach((cleanup) => cleanup());
+    assert.equal(document.body.style.overflow, "auto", `${surface}: true unmount releases lock`);
+  }
 
   console.log(
     "Page rendering passed: journey, saved routes and about navigation",

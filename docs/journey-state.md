@@ -23,7 +23,7 @@ recent plan also clears that answer, as the confirmation explains.
 `useJourneyWorkspace` owns orchestration; page components own layout. A direct
 load or refresh of the Journey page deliberately starts with a blank draft and
 does not reopen the most recent snapshot. Saved plans remain in the library;
-an active protected plan stays available through the `Back to my journey` bar,
+an active protected plan stays available through the in-flow `Resume journey` entry,
 and any plan can be opened explicitly from Saved journeys. The header logo and
 Plan a journey links use the same fresh-draft action. Progress is never inferred
 from time, GPS or a train position. No accounts or cross-device sync are added.

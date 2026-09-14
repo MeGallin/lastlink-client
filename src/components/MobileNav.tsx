@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { siteNavigationItems, type SitePage } from './navigation'
 import { LastLinkLogo } from './LastLinkLogo'
+import { useDialogSurface } from './useDialogSurface'
 
 export type MobileNavPage = SitePage
 
@@ -10,21 +11,22 @@ type MobileNavProps = {
 }
 
 export function MobileNav({ currentPage, onJourneyHome }: MobileNavProps) {
-  const dialogRef = useRef<HTMLDialogElement>(null)
+  const { dialogRef, open, close, finish } = useDialogSurface()
   const [isOpen, setIsOpen] = useState(false)
 
   useEffect(() => {
     const dialog = dialogRef.current
     if (!dialog) return
 
-    if (isOpen && !dialog.open) {
-      dialog.showModal()
+    if (isOpen) {
+      open()
     } else if (!isOpen && dialog.open) {
-      dialog.close()
+      close()
     }
-  }, [isOpen])
+  }, [isOpen, dialogRef, open, close])
 
-  function closeMenu() {
+  function closeMenu(restoreFocus = true) {
+    close(restoreFocus)
     setIsOpen(false)
   }
 
@@ -48,19 +50,19 @@ export function MobileNav({ currentPage, onJourneyHome }: MobileNavProps) {
         id="mobile-navigation"
         className="mobile-nav-sheet"
         aria-labelledby="mobile-navigation-title"
-        onClose={() => setIsOpen(false)}
+        onClose={() => { finish(); setIsOpen(false) }}
         onClick={(event) => {
           if (event.target === event.currentTarget) closeMenu()
         }}
       >
-        <button className="mobile-nav-sheet__close" type="button" onClick={closeMenu}>
+        <button className="mobile-nav-sheet__close" type="button" autoFocus onClick={() => closeMenu()}>
           <span aria-hidden="true">×</span>
           <span className="sr-only">Close navigation</span>
         </button>
 
         <div className="mobile-nav-sheet__content">
           <p className="mobile-nav-sheet__eyebrow">
-            Move around <LastLinkLogo variant="wordmark" />
+            Move around <LastLinkLogo variant="wordmark" inverse />
           </p>
           <h2 id="mobile-navigation-title">Where do you want to go?</h2>
           <nav aria-label="Mobile navigation">
@@ -73,7 +75,7 @@ export function MobileNav({ currentPage, onJourneyHome }: MobileNavProps) {
                     aria-current={item.page === currentPage ? 'page' : undefined}
                     onClick={() => {
                       if (item.page === 'journey') onJourneyHome?.()
-                      closeMenu()
+                      closeMenu(false)
                     }}
                   >
                     <span>{item.label}</span>

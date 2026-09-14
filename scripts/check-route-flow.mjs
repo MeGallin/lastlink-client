@@ -21,6 +21,7 @@ import {
   formatRouteMode,
   formatRouteService,
   getLineColor,
+  getPrimaryRouteLineColor,
   getRouteChange,
   getRouteDisplayMode,
   getRouteIconKind,
@@ -134,6 +135,25 @@ assert.equal(
 )
 assert.equal(getLineColor('Jubilee'), '#a0a5a9')
 assert.equal(getLineColor('Jubilee line'), '#a0a5a9')
+assert.equal(
+  getPrimaryRouteLineColor([
+    { mode: 'walk' },
+    { mode: 'tube', lineName: 'Central' },
+  ]),
+  '#e32017',
+)
+assert.equal(
+  getPrimaryRouteLineColor([
+    { mode: 'bus', lineName: 'Bus 25' },
+    { mode: 'tube', lineName: 'Victoria' },
+  ]),
+  '#0098d4',
+)
+assert.equal(getPrimaryRouteLineColor([{ mode: 'walk' }]), undefined)
+assert.equal(
+  getPrimaryRouteLineColor([{ mode: 'tube', lineName: 'Unknown line' }]),
+  undefined,
+)
 assert.equal(getRouteIconKind('walk'), 'walk')
 assert.equal(getRouteIconKind('tube'), 'tube')
 assert.equal(getRouteIconKind('bus'), 'bus')

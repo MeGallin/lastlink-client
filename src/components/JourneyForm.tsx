@@ -93,7 +93,7 @@ export function JourneyForm({
               id="origin"
               invalid={error?.field === 'origin'}
               label="Starting point"
-              helpText="Choose a Tube station from the TfL list"
+              helpText="Type to filter, or browse the Tube station list"
               openPickerId={openPickerId}
               onOpen={() => setOpenPickerId('origin')}
               onClose={() => setOpenPickerId(null)}
@@ -130,7 +130,7 @@ export function JourneyForm({
               id="destination"
               invalid={error?.field === 'destination'}
               label="Destination"
-              helpText="Tube station only — choose from the TfL list"
+              helpText="Choose a Tube station from the TfL list"
               openPickerId={openPickerId}
               onOpen={() => setOpenPickerId('destination')}
               onClose={() => setOpenPickerId(null)}
@@ -144,8 +144,6 @@ export function JourneyForm({
           <FormField
             label={returnFrom ? 'Arrive back by' : 'Arrive by'}
             htmlFor="arriveBy"
-            helpText={`Be ${returnFrom ? 'back at' : 'at'} the destination Tube station by this time. Past times are unavailable. Uses ${timeZoneLabel}; results are shown in London time.`}
-            helpId="arrive-by-help"
           >
             <TextInput
               id="arriveBy"
@@ -162,6 +160,9 @@ export function JourneyForm({
                   .join(' ')
               }
             />
+            <small id="arrive-by-help">
+              Be {returnFrom ? 'back at' : 'at'} the destination station by this time. Enter {timeZoneLabel}; results are shown in London time.
+            </small>
             {arriveByMessage && (
               <span id="arrive-by-error" className="field-error">
                 {arriveByMessage}

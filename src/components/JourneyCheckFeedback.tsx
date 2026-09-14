@@ -33,7 +33,7 @@ export function JourneyCheckFeedback({
         >
           <strong>Could not check {routeName(error.input)}</strong>
           <p>{error.message}</p>
-          {previousName && <p>Your previous plan, {previousName}, is unchanged below.</p>}
+          {previousName && <p>Your previous plan, {previousName}, is unchanged.</p>}
         </div>
       )}
       {pending && (
