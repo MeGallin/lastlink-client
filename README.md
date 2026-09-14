@@ -107,6 +107,10 @@ The Vite development server proxies `/api` to the owner-managed API at
 `http://localhost:3000`. The API must be running separately. Override the API
 base path with `VITE_API_BASE_URL` when needed.
 
+Production builds load `.env.production`, which points the browser directly at
+the Render API (`https://lastlink-api.onrender.com/api`). This is a public API
+base URL, not a credential; secrets remain server-side.
+
 To create and copy a production build to the configured local web root used by
 the `lastlink.livenotice.co.uk` site, run:
 

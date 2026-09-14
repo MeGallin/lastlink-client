@@ -43,4 +43,5 @@ This is a Windows/XAMPP-only command.
 
 The Vite development proxy sends `/api` requests to the owner-managed API at
 `http://localhost:3000`. Set `VITE_API_BASE_URL` only when the API is hosted at
-another origin or path.
+another origin or path. The `.env.production` setting points production builds
+to `https://lastlink-api.onrender.com/api`; it contains no credentials.
