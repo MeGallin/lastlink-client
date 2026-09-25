@@ -87,7 +87,7 @@ export function HowToUseDialog() {
             <h3>Read the answer</h3>
             <ul>
               <li>
-                <strong>Looks viable</strong> means the route clears your safety margin.
+                <strong>Enough time</strong> means the planned route clears your safety margin.
               </li>
               <li>
                 <strong>Tight margin</strong> means it may work, but there is little spare time.
@@ -123,7 +123,7 @@ export function HowToUseDialog() {
             <h3>Save and recover a plan</h3>
             <p>
               Plans are saved automatically on this browser and device when storage is available.
-              Choose Start this journey to protect one plan, with space for two recent checks.
+              Choose Follow this route to protect one plan, with space for two recent checks.
               Retrieve them in Saved journeys → Open saved plan. Opening a plan does not start it.
               While travelling, use Resume journey and select your current leg yourself;
               LastLink does not track your phone or train.

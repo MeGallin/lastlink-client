@@ -215,6 +215,23 @@ try {
     assert.doesNotMatch(viableHtml, /Recheck before starting/)
     assert.match(viableHtml, /View route steps/)
     assert.match(viableHtml, /Viable route/)
+    assert.match(viableHtml, /Enough time/)
+    const withWalk = structuredClone(positive)
+    withWalk.route.legs[0].directions = ['Jubilee line towards Stratford']
+    withWalk.route.legs.unshift({
+      mode: 'walk', from: 'Waterloo Station', to: 'Waterloo Underground Station',
+      departureAt: new Date(departure - 3 * 60_000).toISOString(),
+      arrivalAt: positive.route.legs[0].departureAt, durationMinutes: 3,
+    })
+    Date.now = () => departure - 4 * 60_000
+    const firstSteps = renderToStaticMarkup(createElement(JourneyAnswer, {
+      response: withWalk, onStart: () => {},
+    }))
+    assert.match(firstSteps, /Walk to Waterloo/)
+    assert.match(firstSteps, /Then catch.*Jubilee line towards Stratford/)
+    assert.match(firstSteps, /Follow this route/)
+    assert.ok(firstSteps.indexOf('Expected arrival') < firstSteps.indexOf('journey-first-steps'))
+    assert.ok(firstSteps.indexOf('journey-first-steps') < firstSteps.indexOf('<dialog'))
     Date.now = () => departure + 1000
     const elapsed = renderToStaticMarkup(
       createElement(JourneyAnswer, {
@@ -230,6 +247,7 @@ try {
     )
     assert.match(elapsed, /Recheck before starting/)
     assert.match(elapsed, /already travelling/)
+    assert.doesNotMatch(elapsed, /journey-first-steps|Follow this route/)
     assert.match(elapsed, /Review stations and deadline/)
     assert.doesNotMatch(elapsed, /one hour from now|Check with a fresh arrival time|live data/)
     assert.match(elapsed, /previous deadline has passed/)

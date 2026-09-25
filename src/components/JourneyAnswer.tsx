@@ -1,5 +1,5 @@
 import { Fragment, type CSSProperties, type RefObject } from 'react'
-import { ArrowsDownUp, Bus, PersonSimpleWalk, Question, Subway, Train } from '@phosphor-icons/react'
+import { ArrowsDownUp } from '@phosphor-icons/react'
 import type { JourneyResponse, JourneyStatus } from '../types/journey'
 import type { JourneyInput } from '../journeys/journey-store'
 import {
@@ -15,6 +15,8 @@ import { useDisplayClock } from './useDisplayClock'
 import { Button } from './ui'
 import { RouteDiagramDialog } from './RouteDiagramDialog'
 import { DepartureCountdown } from './DepartureCountdown'
+import { RouteLegIcon } from './RouteLegIcon'
+import { JourneyLegSummary } from './JourneyLegSummary'
 import {
   formatAlternativeMargin,
   formatAlternativeServices,
@@ -25,7 +27,6 @@ import {
   getLineColor,
   getPrimaryRouteLineColor,
   getRouteDisplayMode,
-  getRouteIconKind,
   providerScheduleMatchesItinerary,
 } from './route-flow'
 
@@ -39,8 +40,6 @@ interface JourneyAnswerProps {
   onRecheck?: () => void
   onReview?: () => void
   onStart?: () => void
-  routeDialogRequest?: { target: string }
-  onRouteDialogClose?: () => void
 }
 
 function formatTime(value: string) {
@@ -66,7 +65,7 @@ function formatTimingDate(departureAt: string, arrivalAt: string) {
 
 function formatStatus(status: JourneyStatus) {
   return {
-    viable: 'Looks viable',
+    viable: 'Enough time',
     tight: 'Tight margin',
     not_viable: 'Not viable',
     unable_to_verify: 'Unable to verify',
@@ -80,21 +79,6 @@ function formatEvidenceSource(source: string) {
     .replace(/^Tfl\b/, 'TfL')
 }
 
-function RouteLegIcon({ mode, lineName }: { mode: string; lineName?: string }) {
-  switch (getRouteIconKind(mode, lineName)) {
-    case 'walk':
-      return <PersonSimpleWalk aria-hidden="true" size={26} weight="regular" />
-    case 'tube':
-      return <Subway aria-hidden="true" size={26} weight="regular" />
-    case 'bus':
-      return <Bus aria-hidden="true" size={26} weight="regular" />
-    case 'rail':
-      return <Train aria-hidden="true" size={26} weight="regular" />
-    default:
-      return <Question aria-hidden="true" size={26} weight="regular" />
-  }
-}
-
 export function JourneyAnswer({
   response,
   answerRef,
@@ -105,10 +89,13 @@ export function JourneyAnswer({
   onRecheck,
   onReview,
   onStart,
-  routeDialogRequest,
-  onRouteDialogClose,
 }: JourneyAnswerProps) {
   const route = response.route
+  const firstLeg = route?.legs[0]
+  const firstTrain = route?.legs.find((leg) => leg.mode !== 'walk')
+  const durationMinutes = route && firstLeg
+    ? Math.max(0, Math.ceil((Date.parse(route.arrivalAt) - Date.parse(firstLeg.departureAt)) / 60_000))
+    : undefined
   const now = useDisplayClock(1_000)
   const departure = Date.parse(route?.legs[0]?.departureAt ?? '')
   const needsRecheck =
@@ -197,6 +184,35 @@ export function JourneyAnswer({
             </span>
           </div>
         )}
+        {route && (
+          <dl className="journey-at-a-glance">
+            <div>
+              <dt>Expected arrival</dt>
+              <dd>{displayTime(route.arrivalAt)}</dd>
+            </div>
+            {durationMinutes !== undefined && (
+              <div><dt>Journey time</dt><dd>{minutes(durationMinutes)}</dd></div>
+            )}
+            {response.margin && (
+              <div>
+                <dt>After your buffer</dt>
+                <dd>
+                  {response.margin.remainingAfterBufferMinutes < 0
+                    ? `${minutes(Math.ceil(Math.abs(response.margin.remainingAfterBufferMinutes)))} short`
+                    : `${minutes(Math.floor(response.margin.remainingAfterBufferMinutes))} spare`}
+                </dd>
+              </div>
+            )}
+          </dl>
+        )}
+        {!isActive && canStart && firstLeg && (
+          <div className="journey-first-steps">
+            <JourneyLegSummary leg={firstLeg} label="First" />
+            {firstLeg.mode === 'walk' && firstTrain && (
+              <JourneyLegSummary leg={firstTrain} label="Then catch" />
+            )}
+          </div>
+        )}
         <p className="route-timing-note">
           Checked {displayDateTime(response.checkedAt)} · London time · saved estimate, not live tracking
         </p>
@@ -245,7 +261,7 @@ export function JourneyAnswer({
             deadline will not change automatically.
           </p>
         )}
-        <div className="next-action">
+        {(isActive || !canStart || !firstLeg) && <div className="next-action">
           <strong>Next action</strong>
           <p>
             {isActive
@@ -256,12 +272,12 @@ export function JourneyAnswer({
                   ? `This plan starts at ${displayTime(route.legs[0].departureAt)}. Check the direction and allow the walking time shown.`
                   : response.nextAction}
           </p>
-        </div>
+        </div>}
         {!isActive && (
           <div className="journey-actions">
             {canStart && onStart && (
               <Button type="button" variant="primary" disabled={pending} onClick={onStart}>
-                Start this journey
+                Follow this route
               </Button>
             )}
             {!deadlineHasPassed && onRecheck && (
@@ -281,27 +297,8 @@ export function JourneyAnswer({
             )}
           </div>
         )}
-        {route && (
-          <dl className="journey-at-a-glance">
-            <div>
-              <dt>Plan starts</dt>
-              <dd>{displayTime(route.legs[0]?.departureAt ?? '')}</dd>
-            </div>
-            <div>
-              <dt>Expected arrival</dt>
-              <dd>{displayTime(route.arrivalAt)}</dd>
-            </div>
-            {response.margin && (
-              <div>
-                <dt>After your buffer</dt>
-                <dd>
-                  {response.margin.remainingAfterBufferMinutes < 0
-                    ? `${minutes(Math.ceil(Math.abs(response.margin.remainingAfterBufferMinutes)))} short`
-                    : `${minutes(Math.floor(response.margin.remainingAfterBufferMinutes))} spare`}
-                </dd>
-              </div>
-            )}
-          </dl>
+        {!isActive && canStart && onStart && (
+          <p className="route-timing-note">Keep this route on this device and update your progress as you travel.</p>
         )}
       </div>
 
@@ -353,8 +350,6 @@ export function JourneyAnswer({
               status={answerStatus}
               statusLabel={routeDiagramStatusLabel}
               statusTone={routeDiagramStatusTone}
-              request={routeDialogRequest}
-              onClose={onRouteDialogClose}
             >
               <RouteDiagram route={route} />
             </RouteDiagramDialog>
@@ -437,7 +432,7 @@ export function JourneyAnswer({
   )
 }
 
-export function RouteDiagram({ route }: { route: NonNullable<JourneyResponse['route']> }) {
+export function RouteDiagram({ route, idPrefix = '' }: { route: NonNullable<JourneyResponse['route']>; idPrefix?: string }) {
   return (
           <ol className="route-flow" aria-label="Journey route">
             {route.legs.map((leg, index) => {
@@ -548,7 +543,7 @@ export function RouteDiagram({ route }: { route: NonNullable<JourneyResponse['ro
                 <Fragment key={`${leg.departureAt}-${leg.arrivalAt}-${leg.from}`}>
                   {routeChange && (
                     <li
-                      id={`route-change-${index}`}
+                      id={`${idPrefix}route-change-${index}`}
                       tabIndex={-1}
                       className={`route-flow__change route-flow__change--${routeChange.kind}`}
                       style={{ '--route-line-color': lineColor } as CSSProperties}
@@ -574,7 +569,7 @@ export function RouteDiagram({ route }: { route: NonNullable<JourneyResponse['ro
                     </li>
                   )}
                   <li
-                    id={`route-leg-${index}`}
+                    id={`${idPrefix}route-leg-${index}`}
                     tabIndex={-1}
                     className={`route-flow__step route-flow__step--${displayMode}`}
                     style={{ '--route-line-color': lineColor } as CSSProperties}

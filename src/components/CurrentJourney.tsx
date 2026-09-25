@@ -13,6 +13,7 @@ import {
   getRouteChange,
 } from './route-flow'
 import { Button, FormField, SelectControl } from './ui'
+import { JourneyLegSummary } from './JourneyLegSummary'
 export function CurrentJourney({
   journey,
   legIndex,
@@ -30,6 +31,8 @@ export function CurrentJourney({
 }) {
   const legs = journey.response.route!.legs
   const leg = legs[legIndex] ?? legs[0]
+  const nextLeg = legs[legIndex + 1]
+  const nextChange = nextLeg ? getRouteChange(leg, nextLeg) : undefined
   const direction = formatRouteDirectionText(leg.directions, leg.instructions?.detailed)
   const change = legIndex > 0 ? getRouteChange(legs[legIndex - 1], leg) : undefined
   const currentLegColor = getLineColor(leg.lineName)
@@ -61,7 +64,7 @@ export function CurrentJourney({
       </div>
       <div className="current-journey__content">
         <div className="current-journey__context">
-          <p className="eyebrow">Your journey · progress set by you</p>
+          <p className="eyebrow">Step {legIndex + 1} of {legs.length} · progress set by you</p>
           <h2 id="current-step-title">
             {leg.mode === 'walk'
               ? 'Walk to ' + shortStation(leg.to)
@@ -77,6 +80,12 @@ export function CurrentJourney({
                   ' in this leg'
                 : ''}
             </p>
+          )}
+          {nextLeg && (
+            <div className="current-journey__next">
+              <JourneyLegSummary leg={nextLeg} label="Next" />
+              {nextChange && <p><strong>{nextChange.title}</strong> {nextChange.description}</p>}
+            </div>
           )}
           <p className="route-timing-note">
             Saved plan, checked {displayDateTime(journey.response.checkedAt)}. This does not track
@@ -107,6 +116,11 @@ export function CurrentJourney({
               ))}
             </SelectControl>
           </FormField>
+          {nextLeg && (
+            <Button type="button" variant="secondary" onClick={() => onLeg(legIndex + 1)}>
+              I’m at the next step
+            </Button>
+          )}
           <div className="journey-actions" aria-label="Journey actions">
             <Button
               type="button"

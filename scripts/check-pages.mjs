@@ -76,7 +76,7 @@ try {
   assert.ok(howToHtml.indexOf("Got it, plan my journey") < howToHtml.indexOf('class="full-guide"'));
   assert.match(howToText, /Read the answer/);
   assert.match(howToText, /saved automatically on this browser and device/);
-  assert.match(howToText, /Start this journey/);
+  assert.match(howToText, /Follow this route/);
   assert.match(howToText, /Saved journeys.*Open saved plan/);
   assert.match(howToText, /Plan return journey.*reverses the stations/);
   assert.match(howToText, /Arrive back by/);
@@ -229,6 +229,31 @@ try {
       route: { arrivalAt: baseLeg.arrivalAt, legs: [baseLeg] },
     },
   };
+  const splitJourneyView = renderToStaticMarkup(
+    createElement(JourneyView, {
+      workspace: {
+        editing: true,
+        shown: sampleJourney,
+        draft: sampleInput,
+        draftDeadlineAtMs: Date.parse(sampleInput.arriveBy),
+        error: null,
+        pending: null,
+        active: null,
+        library: { active: null },
+        focusIntent: "result",
+        focusVersion: 1,
+      },
+      answerRef: { current: null },
+      onStart: () => {},
+      onEnd: () => {},
+      onExplore: () => {},
+      onStartNew: () => {},
+    }),
+  );
+  assert.match(splitJourneyView, /class="journey-layout journey-layout--split"/);
+  assert.match(splitJourneyView, /Plan a journey/);
+  assert.match(splitJourneyView, /journey-layout__planner/);
+  assert.match(splitJourneyView, /journey-layout__result/);
   const answerWithNotice = renderToStaticMarkup(
     createElement(JourneyAnswer, {
       response: sampleJourney.response,
@@ -317,6 +342,20 @@ try {
   assert.ok(activeView.indexOf('id="current-journey"') < activeView.indexOf('class="protected-plan-details"'));
   assert.ok(activeView.indexOf('class="protected-plan-details"') < activeView.indexOf('class="new-journey-prompt"'));
   assert.match(activeView, /View current step/);
+  assert.match(activeView, /Your full route/);
+  assert.match(activeView, /id="current-route-leg-0"/);
+  const activeIds = [...activeView.matchAll(/\bid="([^"]+)"/g)].map(match => match[1]);
+  assert.equal(new Set(activeIds).size, activeIds.length, 'Inline and dialog diagrams have unique IDs');
+  const nextStepHtml = renderToStaticMarkup(createElement(CurrentJourney, {
+    journey: { ...sampleJourney, response: { ...sampleJourney.response,
+      route: { legs: [baseLeg, { ...baseLeg, mode: 'walk', from: 'Waterloo', to: 'Waterloo Station' }] },
+    } },
+    legIndex: 0, onLeg() {}, onReplan() {}, onEnd() {}, onViewStep() {},
+  }));
+  assert.match(nextStepHtml, /Step 1 of 2/);
+  assert.match(nextStepHtml, /Next.*Walk to Waterloo Station/);
+  assert.match(nextStepHtml, /I’m at the next step/);
+  assert.doesNotMatch(activeView, /I’m at the next step/);
   assert.match(activeView, /--route-accent:\s*#000000/);
   for (const nextLine of ["Northern", "Bakerloo"]) {
     const currentHtml = renderToStaticMarkup(
@@ -397,7 +436,10 @@ try {
     new URL("../src/journeys/useJourneyWorkspace.ts", import.meta.url),
     "utf8",
   );
-  assert.match(journeySource, /Reach your station in time/);
+  assert.match(journeySource, /Plan a journey/);
+  assert.match(journeySource, /Current search/);
+  assert.match(journeySource, /Edit search/);
+  assert.match(journeySource, /plannerVisibility\.focusVersion === w\.focusVersion/);
   assert.doesNotMatch(journeySource, /Late-night journey check/);
   assert.match(aboutSource, /station-arrival deadline/);
   assert.doesNotMatch(aboutSource, /late-night/i);

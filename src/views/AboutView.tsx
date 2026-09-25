@@ -76,7 +76,7 @@ export function AboutView() {
           <h2>How to read an answer</h2>
           <ul>
             <li>
-              <strong>Looks viable</strong> means the planned route clears your buffer.
+              <strong>Enough time</strong> means the planned route clears your buffer.
             </li>
             <li>
               <strong>Tight margin</strong> means the route is possible but leaves little room.
@@ -140,7 +140,7 @@ export function AboutView() {
           <h2 id="about-saved" tabIndex={-1}>Save, retrieve and reverse a journey</h2>
           <p>
             Up to three plans are kept in this browser on this device when storage is available.
-            Choose Start this journey to protect one plan; two slots remain for recent checks. New
+            Choose Follow this route to protect one plan; two slots remain for recent checks. New
             searches cannot replace the protected plan. Without a started journey, the three most
             recent checks are kept.
           </p>

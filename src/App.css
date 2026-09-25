@@ -373,6 +373,40 @@ li[tabindex='-1']:focus {
   min-width: 0;
 }
 
+.journey-view {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+.journey-layout,
+.journey-layout__planner,
+.journey-layout__result {
+  min-width: 0;
+}
+
+.journey-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+  gap: 1.25rem;
+}
+
+.journey-layout--form-only .journey-layout__planner {
+  width: 100%;
+}
+
+.journey-view:has(.journey-layout--form-only) {
+  width: min(100%, 45rem);
+  margin-inline: auto;
+}
+
+.journey-follow-layout { display: grid; align-items: start; gap: 2rem; min-width: 0; }
+.journey-follow-layout > * { min-width: 0; }
+.journey-follow-layout .current-journey__content { grid-template-columns: minmax(0, 1fr); gap: 1rem; }
+.journey-follow-layout .current-journey__controls { padding: 1rem 0 0; border-left: 0; border-top: 1px solid var(--line); }
+.current-route h2 { margin: 0; font-size: 1.4rem; }
+
 .storage-warning,
 .essential-notice,
 .prototype-notice,
@@ -422,7 +456,8 @@ li[tabindex='-1']:focus {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .intro h1,
@@ -434,6 +469,11 @@ li[tabindex='-1']:focus {
   font-weight: 850;
   letter-spacing: -0.065em;
   line-height: 1.06;
+}
+
+.intro h1 {
+  font-size: clamp(1.6rem, 3.2vw, 1.85rem);
+  letter-spacing: -0.045em;
 }
 
 .intro-copy,
@@ -677,6 +717,10 @@ li[tabindex='-1']:focus {
   border-bottom: 1px solid var(--line);
 }
 
+.journey-search-summary {
+  display: none;
+}
+
 .new-journey-prompt {
   display: flex;
   align-items: center;
@@ -798,8 +842,58 @@ li[tabindex='-1']:focus {
   align-items: start;
 }
 
+.journey-buffer > summary {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3rem;
+  padding: 0.4rem 0.6rem;
+  color: var(--action);
+  cursor: pointer;
+  font-size: 0.9rem;
+  list-style: none;
+}
+
+.journey-buffer > summary::-webkit-details-marker { display: none; }
+.journey-buffer > summary:hover { background: var(--surface-subtle); }
+.journey-buffer > .field { padding: 0.5rem 0.6rem; }
+.journey-buffer[open] .route-disclosure-chevron { transform: rotate(225deg); }
+
+.journey-first-steps {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.25rem;
+  padding-block: 1rem;
+  border-block: 1px solid var(--line);
+}
+
+.journey-leg-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.journey-leg-summary__icon {
+  display: grid;
+  flex: 0 0 2.25rem;
+  width: 2.25rem;
+  height: 2.25rem;
+  place-items: center;
+  border-left: 0.25rem solid var(--route-line-color);
+  color: var(--text);
+}
+
+.journey-leg-summary > div { min-width: 0; }
+.journey-leg-summary strong { display: block; font-size: 1rem; line-height: 1.4; }
+.journey-leg-summary__label { font-size: 0.78rem; color: var(--muted); }
+.journey-leg-summary p { margin: 0.25rem 0 0; font-size: 0.85rem; color: var(--muted); }
+.current-journey__next { margin-block: 1rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+.current-journey__next > p { font-size: 0.9rem; }
+
 .field {
   display: grid;
+  align-content: start;
   min-width: 0;
   gap: 0.5rem;
   color: var(--text);
@@ -812,7 +906,7 @@ li[tabindex='-1']:focus {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  min-height: 2rem;
+  min-height: 3rem;
 }
 
 .field-label-row label,
@@ -823,7 +917,7 @@ li[tabindex='-1']:focus {
 .field > label {
   display: flex;
   align-items: center;
-  min-height: 2rem;
+  min-height: 3rem;
 }
 
 .field input,
@@ -1052,8 +1146,8 @@ li[tabindex='-1']:focus {
   border-left-color: var(--danger);
 }
 
-.swap-action {
-  min-height: 2rem;
+.field-label-row .swap-action {
+  min-height: 3rem;
   flex: 0 0 auto;
   gap: 0.35rem;
   padding: 0.15rem 0;
@@ -1568,7 +1662,7 @@ button:disabled {
 .journey-at-a-glance dd {
   margin: 0.2rem 0 0;
   color: var(--text);
-  font-size: 1.12rem;
+  font-size: clamp(1.2rem, 2.5vw, 1.65rem);
   font-weight: 850;
   letter-spacing: -0.03em;
 }
@@ -2473,7 +2567,28 @@ button:disabled {
   color: var(--focus);
 }
 
+@media (min-width: 64rem) {
+  .journey-follow-layout {
+    grid-template-columns: minmax(20rem, 0.82fr) minmax(0, 1.18fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+  }
+  .journey-layout--split {
+    grid-template-columns: minmax(20rem, 0.82fr) minmax(0, 1.18fr);
+    gap: clamp(1.5rem, 3vw, 3rem);
+  }
+
+  .journey-layout--split .journey-layout__planner {
+    width: 100%;
+  }
+
+  .journey-layout--split .journey-form > .field-grid:not(.field-grid-secondary) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 @media (min-width: 42rem) {
+  .journey-view { gap: 1.5rem; }
+
   .field-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2562,12 +2677,67 @@ button:disabled {
     padding-top: 1.1rem;
   }
 
+  .journey-view {
+    gap: 1rem;
+  }
+
+  .journey-layout,
+  .journey-layout--split {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1rem;
+  }
+
+  .journey-layout__planner--collapsed .journey-panel {
+    display: none;
+  }
+
+  .journey-layout__planner--collapsed .journey-search-summary {
+    display: flex;
+  }
+
+  .journey-search-summary {
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.85rem;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .journey-search-summary__route {
+    display: grid;
+    gap: 0.2rem;
+    min-width: 0;
+  }
+
+  .journey-search-summary__route .eyebrow {
+    margin: 0;
+    font-size: 0.65rem;
+  }
+
+  .journey-search-summary__route strong {
+    overflow-wrap: anywhere;
+    color: var(--text);
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+
+  .journey-search-summary__route > span:last-child {
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .journey-search-summary > button {
+    flex: 0 0 auto;
+    min-height: 2.75rem;
+    padding-inline: 0.75rem;
+  }
+
   .intro-heading {
     align-items: flex-start;
     gap: 0.5rem;
   }
 
-  .intro h1,
   .page-heading h1 {
     font-size: clamp(1.85rem, 7.5vw, 2.5rem);
   }
@@ -2610,10 +2780,25 @@ button:disabled {
     width: 100%;
   }
 
-  .field-grid-secondary,
-  .journey-at-a-glance {
+  .field-grid-secondary {
     grid-template-columns: minmax(0, 1fr);
   }
+
+  .journey-at-a-glance {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+  }
+
+  .journey-at-a-glance > div:nth-child(3) {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+  }
+
+  .journey-at-a-glance > div:nth-child(3) dd { font-size: 0.95rem; }
 
   .journey-actions > button {
     width: 100%;

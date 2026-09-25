@@ -140,7 +140,7 @@ export function JourneyForm({
             />
           </div>
         </div>
-        <div className="field-grid field-grid-secondary">
+        <div className="journey-deadline">
           <FormField
             label={returnFrom ? 'Arrive back by' : 'Arrive by'}
             htmlFor="arriveBy"
@@ -191,6 +191,12 @@ export function JourneyForm({
               </div>
             </div>
           </FormField>
+        </div>
+        <details className="journey-buffer">
+          <summary>
+            <span className="route-disclosure-chevron" aria-hidden="true" />
+            <span>{values.safetyBufferMinutes}-minute safety margin · Change</span>
+          </summary>
           <FormField label="Safety margin" htmlFor="safetyBuffer" helpText="Extra time at your destination">
             <SelectControl
               id="safetyBuffer"
@@ -203,7 +209,7 @@ export function JourneyForm({
               <option value="15">15 minutes</option>
             </SelectControl>
           </FormField>
-        </div>
+        </details>
         <JourneyCheckFeedback
           error={error}
           pending={pending}

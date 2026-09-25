@@ -1,5 +1,5 @@
 import { ArrowUpRight, CheckCircle, MapTrifold, Question, WarningCircle, XCircle } from '@phosphor-icons/react'
-import { useCallback, useEffect, useId, type CSSProperties, type ReactNode } from 'react'
+import { useId, type CSSProperties, type ReactNode } from 'react'
 import type { JourneyResponse } from '../types/journey'
 import type { JourneyStatus } from '../types/journey'
 import { displayDateTime, shortStation } from '../journeys/journey-presentation'
@@ -8,34 +8,23 @@ import { getPrimaryRouteLineColor } from './route-flow'
 import { useDialogSurface } from './useDialogSurface'
 
 export function RouteDiagramDialog({
-  route, checkedAt, status, statusLabel, statusTone, request, onClose, children,
+  route, checkedAt, status, statusLabel, statusTone, children,
 }: {
   route: NonNullable<JourneyResponse['route']>
   checkedAt: string
   status: JourneyStatus
   statusLabel: string
   statusTone?: JourneyStatus | 'stale'
-  request?: { target: string }
-  onClose?: () => void
   children: ReactNode
 }) {
   const { dialogRef: dialog, open: openSurface, close, finish } = useDialogSurface()
   const headingId = useId()
-  const open = useCallback((target?: string) => {
+  function open() {
     const element = dialog.current
     if (!element) return
     openSurface()
-    const step = target ? element.querySelector<HTMLElement>('#' + target) : null
-    if (step) {
-      step.scrollIntoView({ block: 'start' })
-      step.focus({ preventScroll: true })
-    } else {
-      element.scrollTo({ top: 0, behavior: 'auto' })
-    }
-  }, [dialog, openSurface])
-  useEffect(() => {
-    if (request) open(request.target)
-  }, [request, open])
+    element.scrollTo({ top: 0, behavior: 'auto' })
+  }
   const tone = statusTone ?? status
   const primaryRouteLineColor = getPrimaryRouteLineColor(route.legs)
   const StatusIcon = tone === 'viable'
@@ -76,7 +65,7 @@ export function RouteDiagramDialog({
             ? ({ '--route-accent': primaryRouteLineColor } as CSSProperties)
             : undefined
         }
-        onClose={() => { finish(); onClose?.() }}
+        onClose={() => finish()}
         onClick={(event) => { if (event.target === event.currentTarget) close() }}
       >
         <header className="route-diagram-dialog__header">
