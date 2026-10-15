@@ -10,9 +10,7 @@ import {
   parseLocalDateTimeValue,
 } from './journey-time'
 
-export type DeadlineEdit =
-  | { kind: 'preset'; atMs: number }
-  | { kind: 'manual'; atMs?: number }
+export type DeadlineEdit = { kind: 'preset'; atMs: number } | { kind: 'manual'; atMs?: number }
 
 interface JourneyFormProps {
   values: JourneyInput
@@ -44,9 +42,7 @@ export function JourneyForm({
   function change(key: keyof JourneyInput, value: string) {
     onChange(
       { ...values, [key]: value },
-      key === 'arriveBy'
-        ? { kind: 'manual', atMs: parseLocalDateTimeValue(value) }
-        : undefined,
+      key === 'arriveBy' ? { kind: 'manual', atMs: parseLocalDateTimeValue(value) } : undefined,
     )
   }
   const canSwap =
@@ -55,7 +51,9 @@ export function JourneyForm({
   const timeZoneLabel = timeZone === 'Europe/London' ? 'UK time' : `${timeZone} on this device`
   const arriveByError = error?.field === 'arriveBy' ? error.message : null
   const arriveByAtMs =
-    deadlineAtMs === undefined ? parseLocalDateTimeValue(values.arriveBy) : deadlineAtMs ?? undefined
+    deadlineAtMs === undefined
+      ? parseLocalDateTimeValue(values.arriveBy)
+      : (deadlineAtMs ?? undefined)
   const minimumArriveByAtMs = parseLocalDateTimeValue(minimumArriveBy)
   const arriveByHasPassed =
     arriveByAtMs !== undefined &&
@@ -80,8 +78,8 @@ export function JourneyForm({
           <div className="journey-form__context" role="status">
             <p className="eyebrow">Return journey</p>
             <p>
-              Based on <strong>{returnFrom}</strong>. Choose when you need to arrive back, then
-              check the reversed route.
+              Based on <strong>{returnFrom}</strong>. Leave now or set an optional arrival deadline,
+              then check the reversed route.
             </p>
           </div>
         )}
@@ -111,7 +109,9 @@ export function JourneyForm({
                 className="swap-action"
                 disabled={!canSwap}
                 title={
-                  canSwap ? 'Swap starting and destination stations' : 'Swap needs two Tube stations'
+                  canSwap
+                    ? 'Swap starting and destination stations'
+                    : 'Swap needs two Tube stations'
                 }
                 onClick={() => {
                   setOpenPickerId(null)
@@ -140,64 +140,30 @@ export function JourneyForm({
             />
           </div>
         </div>
-        <div className="journey-deadline">
-          <FormField
-            label={returnFrom ? 'Arrive back by' : 'Arrive by'}
-            htmlFor="arriveBy"
-          >
-            <TextInput
-              id="arriveBy"
-              type="datetime-local"
-              value={values.arriveBy}
-              required
-              onChange={(event) => change('arriveBy', event.target.value)}
-              min={minimumArriveBy}
-              aria-invalid={!!arriveByMessage}
-              aria-errormessage={arriveByMessage ? 'arrive-by-error' : undefined}
-              aria-describedby={
-                ['arrive-by-help', arriveByMessage ? 'arrive-by-error' : null]
-                  .filter(Boolean)
-                  .join(' ')
-              }
-            />
-            <small id="arrive-by-help">
-              Be {returnFrom ? 'back at' : 'at'} the destination station by this time. Enter {timeZoneLabel}; results are shown in London time.
-            </small>
-            {arriveByMessage && (
-              <span id="arrive-by-error" className="field-error">
-                {arriveByMessage}
-              </span>
-            )}
-            <div className="deadline-presets" role="group" aria-label="Quick arrival time choices">
-              <span className="deadline-presets__label">Quick choices</span>
-              <div className="deadline-presets__options">
-                {deadlinePresets.map((preset) => (
-                  <Button
-                    key={preset.value}
-                    type="button"
-                    variant="text"
-                    className="deadline-preset"
-                    data-selected={values.arriveBy === preset.value ? 'true' : undefined}
-                    onClick={() =>
-                      onChange(
-                        { ...values, arriveBy: preset.value },
-                        { kind: 'preset', atMs: preset.atMs },
-                      )
-                    }
-                  >
-                    {preset.label}
-                  </Button>
-                ))}
-              </div>
-            </div>
-          </FormField>
+        <div className="journey-time-mode">
+          <strong>
+            {values.timeMode === 'leave_now' ? 'Leave now' : 'Arrive by a specific time'}
+          </strong>
+          <p>
+            {values.timeMode === 'leave_now'
+              ? 'Find the next practical route from your starting station.'
+              : 'Check whether you can reach your station before your deadline.'}
+          </p>
         </div>
         <details className="journey-buffer">
           <summary>
             <span className="route-disclosure-chevron" aria-hidden="true" />
             <span>{values.safetyBufferMinutes}-minute safety margin · Change</span>
           </summary>
-          <FormField label="Safety margin" htmlFor="safetyBuffer" helpText="Extra time at your destination">
+          <FormField
+            label="Safety margin"
+            htmlFor="safetyBuffer"
+            helpText={
+              values.timeMode === 'leave_now'
+                ? 'Extra allowance added to the arrival estimate; not a live guarantee'
+                : 'Extra time at your destination'
+            }
+          >
             <SelectControl
               id="safetyBuffer"
               value={values.safetyBufferMinutes}
@@ -210,11 +176,77 @@ export function JourneyForm({
             </SelectControl>
           </FormField>
         </details>
-        <JourneyCheckFeedback
-          error={error}
-          pending={pending}
-          previousName={previousName}
-        />
+        <Button
+          type="button"
+          variant="text"
+          className="journey-time-toggle"
+          aria-expanded={values.timeMode !== 'leave_now'}
+          aria-controls="journey-deadline"
+          onClick={() => {
+            if (values.timeMode === 'leave_now') {
+              onChange({ ...values, timeMode: 'arrive_by', arriveBy: '' }, { kind: 'manual' })
+            } else onChange({ ...values, timeMode: 'leave_now', arriveBy: '' })
+          }}
+        >
+          {values.timeMode === 'leave_now'
+            ? 'Need to arrive by a specific time?'
+            : 'Leave now instead'}
+        </Button>
+        {values.timeMode !== 'leave_now' && (
+          <div className="journey-deadline" id="journey-deadline">
+            <FormField label={returnFrom ? 'Arrive back by' : 'Arrive by'} htmlFor="arriveBy">
+              <TextInput
+                id="arriveBy"
+                type="datetime-local"
+                value={values.arriveBy}
+                required
+                onChange={(event) => change('arriveBy', event.target.value)}
+                min={minimumArriveBy}
+                aria-invalid={!!arriveByMessage}
+                aria-errormessage={arriveByMessage ? 'arrive-by-error' : undefined}
+                aria-describedby={['arrive-by-help', arriveByMessage ? 'arrive-by-error' : null]
+                  .filter(Boolean)
+                  .join(' ')}
+              />
+              <small id="arrive-by-help">
+                Be {returnFrom ? 'back at' : 'at'} the destination station by this time. Enter{' '}
+                {timeZoneLabel}; results are shown in London time.
+              </small>
+              {arriveByMessage && (
+                <span id="arrive-by-error" className="field-error">
+                  {arriveByMessage}
+                </span>
+              )}
+              <div
+                className="deadline-presets"
+                role="group"
+                aria-label="Quick arrival time choices"
+              >
+                <span className="deadline-presets__label">Quick choices</span>
+                <div className="deadline-presets__options">
+                  {deadlinePresets.map((preset) => (
+                    <Button
+                      key={preset.value}
+                      type="button"
+                      variant="text"
+                      className="deadline-preset"
+                      data-selected={values.arriveBy === preset.value ? 'true' : undefined}
+                      onClick={() =>
+                        onChange(
+                          { ...values, arriveBy: preset.value },
+                          { kind: 'preset', atMs: preset.atMs },
+                        )
+                      }
+                    >
+                      {preset.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </FormField>
+          </div>
+        )}
+        <JourneyCheckFeedback error={error} pending={pending} previousName={previousName} />
         <Button variant="primary" type="submit" disabled={!!pending}>
           {pending ? 'Checking…' : 'Check my route'}
         </Button>

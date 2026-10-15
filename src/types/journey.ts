@@ -13,7 +13,10 @@ export interface JourneyResponse {
   nextAction: string
   stationOnly: true
   stationOnlyWarning: string
-  deadline: { arriveBy: string }
+  deadline: { arriveBy: string } | null
+  planningMode?: 'leave_now'
+  departureAt?: string
+  safetyBufferMinutes?: number
   margin: {
     arrivalAt: string
     transferMinutes: number
@@ -31,7 +34,7 @@ export interface JourneyResponse {
       arrivalAt: string
       durationMinutes: number
       walkingMinutes?: number
-      remainingAfterBufferMinutes: number
+      remainingAfterBufferMinutes: number | null
       segments: Array<{
         mode: string
         lineName?: string

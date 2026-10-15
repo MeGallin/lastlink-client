@@ -5,7 +5,7 @@ import { SiteHeader } from './components/SiteHeader'
 import type { SitePage } from './components/navigation'
 import { useJourneyWorkspace } from './journeys/useJourneyWorkspace'
 import { routeName } from './journeys/journey-presentation'
-import { journeyFocusTarget } from './journeys/journey-focus'
+import { journeyFocusTarget, savedJourneyReviewField } from './journeys/journey-focus'
 import { AboutView } from './views/AboutView'
 import { JourneyView } from './views/JourneyView'
 import { SavedItemsView } from './views/SavedItemsView'
@@ -32,7 +32,6 @@ function App() {
   const answerRef = useRef<HTMLElement>(null)
   const cancelRef = useRef(w.cancelCheck)
   const lastFocus = useRef('')
-  const lastPage = useRef<SitePage | null>(null)
   const formFocus = useRef<string | null>(null)
   const activeId = w.active?.id ?? null
   const activeRouteAccent = getPrimaryRouteLineColor(w.active?.response.route?.legs)
@@ -65,8 +64,6 @@ function App() {
   useEffect(() => {
     const focusKey = page + ':' + w.focusVersion
     if (lastFocus.current === focusKey) return
-    const pageChanged = lastPage.current !== page
-    lastPage.current = page
     const frame = requestAnimationFrame(() => {
       lastFocus.current = focusKey
       const focusTarget = page === 'journey'
@@ -81,8 +78,7 @@ function App() {
               ? answerRef.current ?? document.querySelector<HTMLElement>('h1')
               : document.querySelector<HTMLElement>('h1')
       target?.focus({ preventScroll: true })
-      if (page === 'journey' && !pageChanged) target?.scrollIntoView({ block: 'start' })
-      else window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' })
     })
     return () => cancelAnimationFrame(frame)
     // Only deliberate page/result changes move focus, never clock or draft updates.
@@ -107,11 +103,12 @@ function App() {
     requestAnimationFrame(() => document.getElementById('origin')?.focus())
   }
   function reviewSavedJourney(journey: SavedJourney) {
-    formFocus.current = 'arriveBy'
+    const field = savedJourneyReviewField(journey.input)
+    formFocus.current = field
     w.openJourney(journey)
     w.explore(journey.input)
     navigate('journey')
-    requestAnimationFrame(() => document.getElementById('arriveBy')?.focus())
+    requestAnimationFrame(() => document.getElementById(field)?.focus())
   }
   function startNewJourney() {
     formFocus.current = 'origin'

@@ -39,8 +39,8 @@ export function AboutView() {
             What <LastLinkLogo variant="wordmark" /> does
           </h2>
           <p>
-            Enter where you are, choose the TfL station you need to reach, and set an arrival
-            deadline. <LastLinkLogo variant="wordmark" /> checks the available TfL journey and
+            Enter where you are and choose the TfL station you need to reach. Leave now is the
+            default; an arrival deadline is optional. <LastLinkLogo variant="wordmark" /> checks the available TfL journey and
             explains whether it leaves enough time for walking, changes and your chosen safety
             margin. The answer is about reaching that station, not completing an onward journey.
           </p>
@@ -57,23 +57,27 @@ export function AboutView() {
               request uses its TfL identity. Swap stations reverses the two Tube stations.
             </li>
             <li>
-              <strong>Arrival deadline:</strong> set the time you need to be at the station. Past
+              <strong>Leave now:</strong> find the next practical route without setting a deadline. Open
+              Need to arrive by a specific time? for an optional station-arrival deadline. Past
               times cannot be selected, and quick choices offer common future deadlines. The form
               shows the device time zone and route times are London time.
             </li>
             <li>
-              <strong>Safety margin:</strong> add extra time for walking, finding the right place
-              and ordinary uncertainty, then choose Check my route.
+              <strong>Safety margin:</strong> five minutes is selected by default. Without a deadline,
+              this adds an allowance to the estimated arrival. With a deadline, it is the extra
+              time the route must leave before that deadline. Choose Check my route.
             </li>
           </ol>
           <p>
-            The home page opens with a fresh draft. Use Start a new journey whenever you want to
+            The home page opens with a fresh draft. After a successful check, the planner closes
+            so you can focus on the result. Use Edit search to adjust the same search, or New journey to
             clear the current form and begin again; this does not delete saved plans.
           </p>
         </section>
 
         <section>
           <h2>How to read an answer</h2>
+          <p>Route found means a Leave now route was returned. Its arrival and arrival allowance are estimates; no deadline or spare time was assessed.</p>
           <ul>
             <li>
               <strong>Enough time</strong> means the planned route clears your buffer.
@@ -98,9 +102,9 @@ export function AboutView() {
         <section>
           <h2 id="about-route" tabIndex={-1}>Follow the route leg by leg</h2>
           <p>
-            Choose View route steps for a focused view of the route, filling the screen on a
-            phone. Close returns to the result; View current step opens the diagram at your
-            selected leg while travelling. Legs appear in travel order. Walking legs use a dotted connector and walking-person
+            Choose View your route below the timing figures for a focused view of the route, filling the screen on a
+            phone. Close returns to the result; View current step scrolls to your
+            selected leg in the full route below the journey controls while travelling. Legs appear in travel order. Walking legs use a dotted connector and walking-person
             icon. Tube legs use the actual line colour, a Tube icon, the line direction and the
             stations between boarding and alighting when TfL provides that sequence.
           </p>
@@ -146,7 +150,7 @@ export function AboutView() {
           </p>
           <p>
             Open Saved journeys to retrieve a plan; opening it does not start it. Choose Plan return
-            journey to reverse the saved stations into a new editable draft, set a new Arrive back
+            journey to reverse the saved stations into a new Leave now draft, optionally set an Arrive back
             by deadline and check the way home without changing the original outbound plan. A
             successful return is saved as its own plan. End a protected journey before removing
             it; ending keeps it as a recent check until the history limit replaces or you remove

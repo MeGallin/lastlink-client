@@ -34,6 +34,8 @@
   --shadow: 0 1.25rem 3rem rgb(20 38 50 / 0.09);
   --motion-fast: 160ms;
   --motion-standard: 220ms;
+  --layout-max-width: 96rem;
+  --layout-gutter: clamp(1.25rem, 3vw, 3rem);
 
   font-family: var(--font-sans);
   font-synthesis: none;

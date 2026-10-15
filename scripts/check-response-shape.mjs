@@ -78,6 +78,11 @@ const validResponse = {
 }
 
 assert.equal(isJourneyResponse(validResponse), true)
+const leaveNow = { ...validResponse, planningMode: 'leave_now', departureAt: validResponse.checkedAt, safetyBufferMinutes: 5, deadline: null, margin: null }
+assert.equal(isJourneyResponse(leaveNow), true)
+assert.equal(isJourneyResponse({ ...leaveNow, planningMode: undefined }), false)
+assert.equal(isJourneyResponse({ ...leaveNow, deadline: validResponse.deadline }), false)
+assert.equal(isJourneyResponse({ ...leaveNow, safetyBufferMinutes: -1 }), false)
 
 const missedDeadline = structuredClone(validResponse)
 missedDeadline.status = 'not_viable'

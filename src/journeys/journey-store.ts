@@ -6,6 +6,7 @@ export interface JourneyInput {
   originName: string
   destinationName: string
   arriveBy: string
+  timeMode?: 'leave_now' | 'arrive_by'
   safetyBufferMinutes: string
 }
 export interface SavedJourney {
@@ -38,7 +39,9 @@ function canonicalJourney(journey: SavedJourney): SavedJourney {
     ...journey,
     input: {
       ...journey.input,
-      arriveBy: new Date(journey.response.deadline.arriveBy).toISOString(),
+      arriveBy: journey.response.deadline
+        ? new Date(journey.response.deadline.arriveBy).toISOString()
+        : '',
     },
   }
 }
@@ -53,10 +56,16 @@ export function draftAfterCheck(
 export function isJourneyInput(value: unknown): value is JourneyInput {
   return (
     isRecord(value) &&
-    ['originName', 'destinationName', 'arriveBy'].every(
+    ['originName', 'destinationName'].every(
       (key) => typeof value[key] === 'string' && value[key].length > 0 && value[key].length <= 120,
     ) &&
-    Number.isFinite(Date.parse(value.arriveBy as string)) &&
+    (value.timeMode === undefined ||
+      value.timeMode === 'leave_now' ||
+      value.timeMode === 'arrive_by') &&
+    typeof value.arriveBy === 'string' &&
+    (value.timeMode === 'leave_now'
+      ? value.arriveBy === ''
+      : Number.isFinite(Date.parse(value.arriveBy))) &&
     ['0', '5', '10', '15'].includes(value.safetyBufferMinutes as string)
   )
 }
@@ -69,6 +78,7 @@ function isSavedJourney(value: unknown): value is SavedJourney {
     Number.isFinite(Date.parse(value.savedAt)) &&
     isJourneyInput(value.input) &&
     isJourneyResponse(value.response) &&
+    (value.input.timeMode === 'leave_now') === (value.response.planningMode === 'leave_now') &&
     value.response.route !== null &&
     value.response.route.legs.length > 0 &&
     value.response.status !== 'unable_to_verify'
@@ -172,9 +182,11 @@ export function sameJourneyInput(
   return (
     left.originName === right.originName &&
     left.destinationName === right.destinationName &&
-    Number.isFinite(leftDeadlineAtMs) &&
-    Number.isFinite(retainedRightDeadlineAtMs) &&
-    leftDeadlineAtMs === retainedRightDeadlineAtMs &&
+    (left.timeMode === 'leave_now') === (right.timeMode === 'leave_now') &&
+    (left.timeMode === 'leave_now' ||
+      (Number.isFinite(leftDeadlineAtMs) &&
+        Number.isFinite(retainedRightDeadlineAtMs) &&
+        leftDeadlineAtMs === retainedRightDeadlineAtMs)) &&
     left.safetyBufferMinutes === right.safetyBufferMinutes
   )
 }

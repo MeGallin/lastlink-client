@@ -65,14 +65,14 @@ export function HowToUseDialog() {
               <span>Type to filter the TfL list. Choose your starting station and the station to reach.</span>
             </li>
             <li>
-              <strong>Set your deadline</strong>
+              <strong>Leave now, or set a deadline</strong>
               <span>
-                Choose when you need to be at the destination, then add extra time with Safety margin.
+                Leave now is the default, with a five-minute safety margin. Need to arrive by a specific time? Open the optional deadline controls; quick choices only apply when you select them.
               </span>
             </li>
             <li>
               <strong>Check and read the route</strong>
-              <span>Review the answer and route steps. This is an estimate, not live tracking.</span>
+              <span>The planner closes to show your answer and route steps. Use Edit search to adjust your choices, or New journey to start again. This is an estimate, not live tracking.</span>
             </li>
           </ol>
 
@@ -86,6 +86,7 @@ export function HowToUseDialog() {
           <section className="how-to-use-dialog__section">
             <h3>Read the answer</h3>
             <ul>
+              <li><strong>Route found</strong> is a Leave now route with an estimated arrival and an arrival allowance. No deadline or spare time was assessed.</li>
               <li>
                 <strong>Enough time</strong> means the planned route clears your safety margin.
               </li>
@@ -105,7 +106,7 @@ export function HowToUseDialog() {
           <section className="how-to-use-dialog__section">
             <h3>Follow each leg</h3>
             <p>
-              Choose View route steps to view walking, Tube and other legs in a focused window.
+              Choose View your route below the timing figures to view walking, Tube and other legs in a focused window.
               Close it to return to your result. Tube legs use the line colour and show
               the direction to catch, where to board, the planned stops and where to get off when
               that information is available. Expand View service details for expected and
@@ -129,9 +130,10 @@ export function HowToUseDialog() {
               LastLink does not track your phone or train.
             </p>
             <p>
-              To plan a separate route, choose Start a new journey. This clears the station fields
+              To plan a separate route, choose New journey. This clears the station fields
               without deleting saved plans. If a plan is old or its planned start has passed,
-              recheck it with a new deadline instead of treating the old answer as live.
+              run a fresh Leave now check, or choose a future optional deadline, instead of
+              treating the old answer as live.
             </p>
           </section>
 
@@ -140,7 +142,7 @@ export function HowToUseDialog() {
             <p>
               From Saved journeys, choose Plan return journey. LastLink reverses the stations into
               a new draft, labels the deadline Arrive back by and leaves the original outbound plan
-              unchanged. Set the time you need to arrive back, then check the new route.
+              unchanged. Leave now for the return, or set an optional Arrive back by deadline, then check the new route.
             </p>
           </section>
 

@@ -77,6 +77,7 @@ export function validateJourneyInput(
         'Your starting point and destination are the same. Choose a different destination station.',
       field: 'destination',
     }
+  if (input.timeMode === 'leave_now') return null
   const arriveByAtMs = deadlineAtMs ?? parseLocalDateTimeValue(input.arriveBy, now)
   if (arriveByAtMs === undefined)
     return { message: 'Add a valid arrival time.', field: 'arriveBy' }

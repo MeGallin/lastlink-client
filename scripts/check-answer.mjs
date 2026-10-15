@@ -31,6 +31,14 @@ try {
   )
   assert.match(formHtml, /id="origin"[^>]*value="Waterloo"/)
   assert.match(formHtml, /id="destination"[^>]*value="Stratford"/)
+  const nowForm = renderToStaticMarkup(createElement(JourneyForm, {
+    values: { originName: 'Waterloo', destinationName: 'Stratford', arriveBy: '', safetyBufferMinutes: '5', timeMode: 'leave_now' },
+    onChange() {}, onCheck() {}, pending: null, error: null,
+  }))
+  assert.match(nowForm, /Leave now/)
+  assert.match(nowForm, /5-minute safety margin/)
+  assert.match(nowForm, /Need to arrive by a specific time/)
+  assert.doesNotMatch(nowForm, /id="arriveBy"|In 30 minutes|In 1 hour|Tomorrow at 09:00/)
   assert.match(formHtml, /id="arriveBy"[^>]*min="[^"]+"/)
   assert.match(formHtml, /Be at the destination station by this time\. Enter UK time; results are shown in London time/)
   assert.match(formHtml, /Quick choices/)
@@ -111,7 +119,7 @@ try {
   assert.match(html, /This itinerary has departed/)
   assert.doesNotMatch(html, /best fit/)
   assert.match(html, /assessment above applies to the detailed route below/)
-  assert.doesNotMatch(html, /View route steps/)
+  assert.doesNotMatch(html, /View your route/)
   const detailResponse = structuredClone(response)
   detailResponse.status = 'viable'
   const detailHtml = renderToStaticMarkup(
@@ -213,9 +221,18 @@ try {
     Date.now = () => departure - 1000
     const viableHtml = renderToStaticMarkup(createElement(JourneyAnswer, { response: positive }))
     assert.doesNotMatch(viableHtml, /Recheck before starting/)
-    assert.match(viableHtml, /View route steps/)
+    assert.match(viableHtml, /View your route/)
+    assert.equal((viableHtml.match(/<strong>View your route<\/strong>/g) ?? []).length, 1)
+    assert.match(viableHtml, /See which train to catch, where to change and every stop/)
     assert.match(viableHtml, /Viable route/)
     assert.match(viableHtml, /Enough time/)
+    const nowHtml = renderToStaticMarkup(createElement(JourneyAnswer, {
+      response: { ...positive, checkedAt: '2026-09-10T22:00:00Z', planningMode: 'leave_now', departureAt: '2026-09-10T22:00:00Z', safetyBufferMinutes: 5, deadline: null, margin: null },
+      currentInput: { originName: 'Waterloo', destinationName: 'Stratford', timeMode: 'leave_now', arriveBy: '', safetyBufferMinutes: '5' },
+    }))
+    assert.match(nowHtml, /Route found/)
+    assert.match(nowHtml, /With 5-minute allowance/)
+    assert.doesNotMatch(nowHtml, /Enough time|After your buffer|Deadline |Time unavailable/)
     const withWalk = structuredClone(positive)
     withWalk.route.legs[0].directions = ['Jubilee line towards Stratford']
     withWalk.route.legs.unshift({
@@ -231,7 +248,9 @@ try {
     assert.match(firstSteps, /Then catch.*Jubilee line towards Stratford/)
     assert.match(firstSteps, /Follow this route/)
     assert.ok(firstSteps.indexOf('Expected arrival') < firstSteps.indexOf('journey-first-steps'))
-    assert.ok(firstSteps.indexOf('journey-first-steps') < firstSteps.indexOf('<dialog'))
+    assert.ok(firstSteps.indexOf('Expected arrival') < firstSteps.indexOf('<strong>View your route</strong>'))
+    assert.ok(firstSteps.indexOf('<strong>View your route</strong>') < firstSteps.indexOf('journey-first-steps'))
+    assert.ok(firstSteps.indexOf('<strong>View your route</strong>') < firstSteps.indexOf('prototype-notice'))
     Date.now = () => departure + 1000
     const elapsed = renderToStaticMarkup(
       createElement(JourneyAnswer, {
@@ -252,7 +271,7 @@ try {
     assert.doesNotMatch(elapsed, /one hour from now|Check with a fresh arrival time|live data/)
     assert.match(elapsed, /previous deadline has passed/)
     assert.doesNotMatch(elapsed, /Leave now and follow/)
-    assert.doesNotMatch(elapsed, /View route steps/)
+    assert.doesNotMatch(elapsed, /View your route/)
     Date.now = () => countdownDeparture - 42_000
     const countdownHtml = renderToStaticMarkup(
       createElement(DepartureCountdown, {

@@ -92,11 +92,11 @@ export function SavedItemsView({
                     <p>{routeServices(journey.response)}</p>
                     <p className="saved-route__freshness">
                       {stale
-                        ? 'This plan is old or its planned start has passed. Review the deadline before checking again.'
+                        ? 'This plan is old or its planned start has passed. Review the search before checking again.'
                         : 'Saved at the last check. Recheck before travel if conditions have changed.'}
                     </p>
                     <small>
-                      Deadline {displayDateTime(journey.input.arriveBy)} ·{' '}
+                      {journey.input.timeMode === 'leave_now' ? 'Leave now search' : `Deadline ${displayDateTime(journey.input.arriveBy)}`} ·{' '}
                       {journey.input.safetyBufferMinutes}-minute margin
                     </small>
                     <small>

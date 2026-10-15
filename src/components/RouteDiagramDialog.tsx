@@ -45,9 +45,9 @@ export function RouteDiagramDialog({
       >
         <MapTrifold className="route-diagram-trigger__map-icon" aria-hidden="true" size={25} weight="bold" />
         <span className="route-diagram-trigger__copy">
-          <strong>View route steps</strong>
+          <strong>View your route</strong>
           <span className="route-diagram-trigger__meta">
-            {route.legs.length} {route.legs.length === 1 ? 'route leg' : 'route legs'} · walks, changes and stops
+            See which train to catch, where to change and every stop.
           </span>
           <span className="route-diagram-trigger__status">
             <StatusIcon aria-hidden="true" size={17} weight="bold" />

@@ -35,6 +35,7 @@ export const newJourneyInput = (): JourneyInput => ({
   destinationName: '',
   arriveBy: defaultArriveBy(),
   safetyBufferMinutes: '5',
+  timeMode: 'leave_now',
 })
 export function useJourneyWorkspace() {
   const [initialDefaultInstant] = useState(() => defaultArriveByInstant())
@@ -160,6 +161,7 @@ export function useJourneyWorkspace() {
           origin: { name: origin.name, tflStopPointId: origin.id },
           destination,
           arriveBy: input.arriveBy,
+          timeMode: input.timeMode,
           arriveByAtMs: deadlineAtMs,
           safetyBufferMinutes: Number(input.safetyBufferMinutes),
         },
@@ -176,7 +178,7 @@ export function useJourneyWorkspace() {
       const snapshot: SavedJourney = {
         id: crypto.randomUUID(),
         savedAt: new Date().toISOString(),
-        input: { ...requested, arriveBy: response.deadline.arriveBy },
+        input: { ...requested, arriveBy: response.deadline?.arriveBy ?? '' },
         response,
       }
       // A checked draft is now an explicit result, not an untouched generated
@@ -184,12 +186,13 @@ export function useJourneyWorkspace() {
       if (source === 'draft') {
         defaultDeadlineRollingRef.current = false
         defaultDeadlineRef.current = ''
-        const responseDeadlineAtMs = Date.parse(response.deadline.arriveBy)
+        const responseDeadlineAtMs = response.deadline ? Date.parse(response.deadline.arriveBy) : null
         defaultDeadlineInstantRef.current = responseDeadlineAtMs
         setDraftDeadlineAtMs(responseDeadlineAtMs)
       }
       updateLibrary(rememberJourney(libraryRef.current, snapshot))
       setShown(snapshot)
+      setEditing(false)
       setReturnJourneyFrom(null)
       setDraft((current) => draftAfterCheck(current, snapshot.input, source))
       setFocusIntent('result')
@@ -234,6 +237,7 @@ export function useJourneyWorkspace() {
       destinationName:
         canonicalTubeStationName(journey.input.originName) ?? journey.input.originName,
       arriveBy,
+      timeMode: 'leave_now',
     })
     setEditing(true)
     setFocusIntent('form')

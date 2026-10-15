@@ -91,11 +91,18 @@ export function JourneyAnswer({
   onStart,
 }: JourneyAnswerProps) {
   const route = response.route
+  const leaveNow = response.planningMode === 'leave_now'
+  const safetyBufferMinutes =
+    response.safetyBufferMinutes ?? Number(currentInput?.safetyBufferMinutes ?? 5)
   const firstLeg = route?.legs[0]
   const firstTrain = route?.legs.find((leg) => leg.mode !== 'walk')
-  const durationMinutes = route && firstLeg
-    ? Math.max(0, Math.ceil((Date.parse(route.arrivalAt) - Date.parse(firstLeg.departureAt)) / 60_000))
-    : undefined
+  const durationMinutes =
+    route && firstLeg
+      ? Math.max(
+          0,
+          Math.ceil((Date.parse(route.arrivalAt) - Date.parse(firstLeg.departureAt)) / 60_000),
+        )
+      : undefined
   const now = useDisplayClock(1_000)
   const departure = Date.parse(route?.legs[0]?.departureAt ?? '')
   const needsRecheck =
@@ -105,14 +112,15 @@ export function JourneyAnswer({
   const canStart =
     !needsRecheck && !deadlineHasPassed && ['viable', 'tight'].includes(response.status)
   const answerStatus = needsRecheck && !isActive ? 'unable_to_verify' : response.status
-  const primaryRouteLineColor =
-    getPrimaryRouteLineColor(route?.legs)
+  const primaryRouteLineColor = getPrimaryRouteLineColor(route?.legs)
   const decisionRouteLineColor =
-    !needsRecheck && ['viable', 'tight'].includes(answerStatus)
-      ? primaryRouteLineColor
-      : undefined
+    !needsRecheck && ['viable', 'tight'].includes(answerStatus) ? primaryRouteLineColor : undefined
   const routeDiagramNeedsFreshCheck = !isActive && (needsRecheck || deadlineHasPassed)
-  const routeDiagramStatus = response.status === 'viable' ? 'Viable route' : 'Tight margin'
+  const routeDiagramStatus = leaveNow
+    ? 'Route found · no arrival deadline set'
+    : response.status === 'viable'
+      ? 'Viable route'
+      : 'Tight margin'
   const routeDiagramStatusLabel = routeDiagramNeedsFreshCheck
     ? 'Needs a fresh check before travel'
     : `${routeDiagramStatus}${isActive ? ' when checked' : ''}`
@@ -147,9 +155,7 @@ export function JourneyAnswer({
           primaryRouteLineColor
             ? ({
                 '--route-accent': primaryRouteLineColor,
-                ...(decisionRouteLineColor
-                  ? { '--decision-accent': decisionRouteLineColor }
-                  : {}),
+                ...(decisionRouteLineColor ? { '--decision-accent': decisionRouteLineColor } : {}),
               } as CSSProperties)
             : undefined
         }
@@ -168,7 +174,9 @@ export function JourneyAnswer({
                 ? 'Your saved route'
                 : needsRecheck
                   ? 'Recheck before starting'
-                  : formatStatus(response.status)}
+                  : leaveNow && response.status === 'viable'
+                    ? 'Route found'
+                    : formatStatus(response.status)}
             </h2>
           </div>
           <span className={`data-mode data-mode-${response.dataMode}`}>
@@ -179,7 +187,8 @@ export function JourneyAnswer({
           <div className="result-identity">
             <strong>{routeName(currentInput)}</strong>
             <span>
-              Deadline {displayDateTime(currentInput.arriveBy)} · {currentInput.safetyBufferMinutes}
+              {leaveNow ? 'Leave now' : `Deadline ${displayDateTime(currentInput.arriveBy)}`} ·{' '}
+              {currentInput.safetyBufferMinutes}
               -minute margin
             </span>
           </div>
@@ -191,7 +200,10 @@ export function JourneyAnswer({
               <dd>{displayTime(route.arrivalAt)}</dd>
             </div>
             {durationMinutes !== undefined && (
-              <div><dt>Journey time</dt><dd>{minutes(durationMinutes)}</dd></div>
+              <div>
+                <dt>Journey time</dt>
+                <dd>{minutes(durationMinutes)}</dd>
+              </div>
             )}
             {response.margin && (
               <div>
@@ -203,7 +215,30 @@ export function JourneyAnswer({
                 </dd>
               </div>
             )}
+            {leaveNow && (
+              <div>
+                <dt>With {safetyBufferMinutes}-minute allowance</dt>
+                <dd>
+                  {displayTime(
+                    new Date(
+                      Date.parse(route.arrivalAt) + safetyBufferMinutes * 60_000,
+                    ).toISOString(),
+                  )}
+                </dd>
+              </div>
+            )}
           </dl>
+        )}
+        {canShowRouteDiagram && route && (
+          <RouteDiagramDialog
+            route={route}
+            checkedAt={response.checkedAt}
+            status={answerStatus}
+            statusLabel={routeDiagramStatusLabel}
+            statusTone={routeDiagramStatusTone}
+          >
+            <RouteDiagram route={route} />
+          </RouteDiagramDialog>
         )}
         {!isActive && canStart && firstLeg && (
           <div className="journey-first-steps">
@@ -214,19 +249,20 @@ export function JourneyAnswer({
           </div>
         )}
         <p className="route-timing-note">
-          Checked {displayDateTime(response.checkedAt)} · London time · saved estimate, not live tracking
+          Checked {displayDateTime(response.checkedAt)} · London time · saved estimate, not live
+          tracking
         </p>
         {!isActive &&
           !needsRecheck &&
           !deadlineHasPassed &&
           ['viable', 'tight'].includes(response.status) &&
           route?.legs[0] && (
-          <DepartureCountdown
-            departureAt={route.legs[0].departureAt}
-            mode={route.legs[0].mode}
-            lineName={route.legs[0].lineName}
-          />
-        )}
+            <DepartureCountdown
+              departureAt={route.legs[0].departureAt}
+              mode={route.legs[0].mode}
+              lineName={route.legs[0].lineName}
+            />
+          )}
         {previous && (
           <p className="previous-plan-note">This is not the answer to the changed search above.</p>
         )}
@@ -261,18 +297,20 @@ export function JourneyAnswer({
             deadline will not change automatically.
           </p>
         )}
-        {(isActive || !canStart || !firstLeg) && <div className="next-action">
-          <strong>Next action</strong>
-          <p>
-            {isActive
-              ? 'Follow your saved plan and station signs. Your position is set by you, not tracked.'
-              : needsRecheck
-                ? 'Review the journey before setting off; the earlier departure advice is no longer current.'
-                : route && canStart
-                  ? `This plan starts at ${displayTime(route.legs[0].departureAt)}. Check the direction and allow the walking time shown.`
-                  : response.nextAction}
-          </p>
-        </div>}
+        {(isActive || !canStart || !firstLeg) && (
+          <div className="next-action">
+            <strong>Next action</strong>
+            <p>
+              {isActive
+                ? 'Follow your saved plan and station signs. Your position is set by you, not tracked.'
+                : needsRecheck
+                  ? 'Review the journey before setting off; the earlier departure advice is no longer current.'
+                  : route && canStart
+                    ? `This plan starts at ${displayTime(route.legs[0].departureAt)}. Check the direction and allow the walking time shown.`
+                    : response.nextAction}
+            </p>
+          </div>
+        )}
         {!isActive && (
           <div className="journey-actions">
             {canStart && onStart && (
@@ -281,117 +319,86 @@ export function JourneyAnswer({
               </Button>
             )}
             {!deadlineHasPassed && onRecheck && (
-              <Button
-                type="button"
-                variant="secondary"
-                disabled={pending}
-                onClick={onRecheck}
-              >
+              <Button type="button" variant="secondary" disabled={pending} onClick={onRecheck}>
                 Recheck this saved plan
               </Button>
             )}
             {onReview && (
               <Button type="button" variant="text" onClick={onReview}>
-                Review stations and deadline
+                {leaveNow ? 'Edit stations or timing' : 'Review stations and deadline'}
               </Button>
             )}
           </div>
         )}
         {!isActive && canStart && onStart && (
-          <p className="route-timing-note">Keep this route on this device and update your progress as you travel.</p>
+          <p className="route-timing-note">
+            Keep this route on this device and update your progress as you travel.
+          </p>
         )}
       </div>
 
-      {route && route.legs.length > 0 && (
-        <div
-          className="route-summary"
-          style={
-            primaryRouteLineColor
-              ? ({ '--route-accent': primaryRouteLineColor } as CSSProperties)
-              : undefined
-          }
-        >
-          <div className="route-heading">
-            <strong>How to get there</strong>
-            <div className="route-heading-meta">
-              <span>{route.walkingMinutes ?? 0} minutes walking</span>
-              <span className="route-total">
-                About{' '}
-                <strong>
-                  {minutes(
-                    Math.max(
-                      0,
-                      Math.ceil(
-                        (Date.parse(route.arrivalAt) -
-                          Date.parse(route.legs[0]?.departureAt ?? '')) /
-                          60_000,
-                      ),
-                    ),
-                  )}
-                </strong>
-              </span>
-            </div>
-          </div>
-          {route.fareWarning && (
-            <p className="route-fare-warning" role="note">
-              {route.fareWarning}
-            </p>
-          )}
-          {route.alternativeRoute && (
-            <p className="route-selection-note" role="note">
-              TfL supplied this as an alternative itinerary. The assessment above explains whether
-              it meets your requirements.
-            </p>
-          )}
-          {canShowRouteDiagram && (
-            <RouteDiagramDialog
-              route={route}
-              checkedAt={response.checkedAt}
-              status={answerStatus}
-              statusLabel={routeDiagramStatusLabel}
-              statusTone={routeDiagramStatusTone}
-            >
-              <RouteDiagram route={route} />
-            </RouteDiagramDialog>
-          )}
-          {route.alternatives && route.alternatives.length > 0 && (
-            <details className="route-alternatives">
-              <summary>
-                <span className="route-disclosure-chevron" aria-hidden="true" />
-                Other options ({route.alternatives.length}) · summaries only
-              </summary>
-              <p>
-                Compare these itinerary summaries. The assessment above applies to the detailed
-                route below.
+      {route &&
+        route.legs.length > 0 &&
+        (route.fareWarning || route.alternativeRoute || !!route.alternatives?.length) && (
+          <div
+            className="route-summary"
+            style={
+              primaryRouteLineColor
+                ? ({ '--route-accent': primaryRouteLineColor } as CSSProperties)
+                : undefined
+            }
+          >
+            {route.fareWarning && (
+              <p className="route-fare-warning" role="note">
+                {route.fareWarning}
               </p>
-              <ul>
-                {route.alternatives.map((alternative, index) => (
-                  <li key={`${alternative.departureAt}-${alternative.arrivalAt}-${index}`}>
-                    <div className="route-alternative-heading">
-                      <strong>{formatAlternativeServices(alternative.segments)}</strong>
-                      <span>{alternative.durationMinutes} minutes total</span>
-                    </div>
-                    <p>
-                      Leave {formatTime(alternative.departureAt)} · arrive{' '}
-                      {formatTime(alternative.arrivalAt)} ·{' '}
-                      {formatAlternativeMargin(alternative.remainingAfterBufferMinutes)}
-                    </p>
-                    <p>
-                      {formatTimingDate(alternative.departureAt, alternative.arrivalAt)} · TfL
-                      Journey Planner estimate
-                    </p>
-                    <p>
-                      {alternative.walkingMinutes === undefined
-                        ? 'Walking time not supplied'
-                        : `Includes ${alternative.walkingMinutes} ${alternative.walkingMinutes === 1 ? 'minute' : 'minutes'} walking`}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            </details>
-          )}
-        </div>
-      )}
+            )}
+            {route.alternativeRoute && (
+              <p className="route-selection-note" role="note">
+                TfL supplied this as an alternative itinerary. The assessment above explains whether
+                it meets your requirements.
+              </p>
+            )}
+            {route.alternatives && route.alternatives.length > 0 && (
+              <details className="route-alternatives">
+                <summary>
+                  <span className="route-disclosure-chevron" aria-hidden="true" />
+                  Other options ({route.alternatives.length}) · summaries only
+                </summary>
+                <p>
+                  Compare these itinerary summaries. The assessment above applies to the detailed
+                  route below.
+                </p>
+                <ul>
+                  {route.alternatives.map((alternative, index) => (
+                    <li key={`${alternative.departureAt}-${alternative.arrivalAt}-${index}`}>
+                      <div className="route-alternative-heading">
+                        <strong>{formatAlternativeServices(alternative.segments)}</strong>
+                        <span>{alternative.durationMinutes} minutes total</span>
+                      </div>
+                      <p>
+                        Leave {formatTime(alternative.departureAt)} · arrive{' '}
+                        {formatTime(alternative.arrivalAt)} ·{' '}
+                        {alternative.remainingAfterBufferMinutes === null
+                          ? 'No arrival deadline set'
+                          : formatAlternativeMargin(alternative.remainingAfterBufferMinutes)}
+                      </p>
+                      <p>
+                        {formatTimingDate(alternative.departureAt, alternative.arrivalAt)} · TfL
+                        Journey Planner estimate
+                      </p>
+                      <p>
+                        {alternative.walkingMinutes === undefined
+                          ? 'Walking time not supplied'
+                          : `Includes ${alternative.walkingMinutes} ${alternative.walkingMinutes === 1 ? 'minute' : 'minutes'} walking`}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </details>
+            )}
+          </div>
+        )}
 
       <p className="station-only-note">{response.stationOnlyWarning}</p>
 
@@ -399,8 +406,8 @@ export function JourneyAnswer({
         <details className="evidence-list answer-evidence">
           <summary>Evidence and freshness</summary>
           <p className="route-timing-note">
-            Times are from the TfL Journey Planner itinerary, not live vehicle observations.
-            Saved plans are not refreshed automatically.
+            Times are from the TfL Journey Planner itinerary, not live vehicle observations. Saved
+            plans are not refreshed automatically.
           </p>
           <ul>
             {response.evidence.map((item) => (
@@ -432,264 +439,260 @@ export function JourneyAnswer({
   )
 }
 
-export function RouteDiagram({ route, idPrefix = '' }: { route: NonNullable<JourneyResponse['route']>; idPrefix?: string }) {
+export function RouteDiagram({
+  route,
+  idPrefix = '',
+}: {
+  route: NonNullable<JourneyResponse['route']>
+  idPrefix?: string
+}) {
   return (
-          <ol className="route-flow" aria-label="Journey route">
-            {route.legs.map((leg, index) => {
-              const previousLeg = route.legs[index - 1]
-              const routeChange = previousLeg ? getRouteChange(previousLeg, leg) : undefined
-              const lineColor = getLineColor(leg.lineName)
-              const displayMode = getRouteDisplayMode(leg.mode, leg.lineName)
-              const hasScheduledTiming =
-                leg.scheduledDepartureAt !== undefined || leg.scheduledArrivalAt !== undefined
-              const hasInstructions = leg.instructions !== undefined
-              const directionText = formatRouteDirectionText(
-                leg.directions,
-                leg.instructions?.detailed,
-              )
-              const instructionText = leg.instructions?.detailed ?? leg.instructions?.summary
-              const showStationInstructions = displayMode === 'walk' && hasInstructions
-              const scheduleMatchesItinerary = providerScheduleMatchesItinerary(
-                leg.departureAt,
-                leg.arrivalAt,
-                leg.scheduledDepartureAt,
-                leg.scheduledArrivalAt,
-              )
-              const noticeCount = leg.notices?.length ?? 0
-              const accessWalk =
-                displayMode === 'walk' &&
-                leg.from.trim().toLowerCase() === leg.to.trim().toLowerCase()
-              const gap = previousLeg
-                ? Math.floor(
-                    (Date.parse(leg.departureAt) - Date.parse(previousLeg.arrivalAt)) / 60_000,
-                  )
-                : 0
-              const hasServiceNotices = noticeCount > 0
-              const serviceDetails = (
-                <>
-                  {leg.notices?.map((notice) => (
-                    <p
-                      className={`route-step-notice route-step-notice--${notice.kind}`}
-                      key={`${notice.kind}-${notice.text}`}
-                      role="note"
-                    >
-                      <strong>
-                        {notice.kind === 'planned_work' ? 'Planned work' : 'Service notice'}
-                      </strong>{' '}
-                      {notice.text}
+    <ol className="route-flow" aria-label="Journey route">
+      {route.legs.map((leg, index) => {
+        const previousLeg = route.legs[index - 1]
+        const routeChange = previousLeg ? getRouteChange(previousLeg, leg) : undefined
+        const lineColor = getLineColor(leg.lineName)
+        const displayMode = getRouteDisplayMode(leg.mode, leg.lineName)
+        const hasScheduledTiming =
+          leg.scheduledDepartureAt !== undefined || leg.scheduledArrivalAt !== undefined
+        const hasInstructions = leg.instructions !== undefined
+        const directionText = formatRouteDirectionText(leg.directions, leg.instructions?.detailed)
+        const instructionText = leg.instructions?.detailed ?? leg.instructions?.summary
+        const showStationInstructions = displayMode === 'walk' && hasInstructions
+        const scheduleMatchesItinerary = providerScheduleMatchesItinerary(
+          leg.departureAt,
+          leg.arrivalAt,
+          leg.scheduledDepartureAt,
+          leg.scheduledArrivalAt,
+        )
+        const noticeCount = leg.notices?.length ?? 0
+        const accessWalk =
+          displayMode === 'walk' && leg.from.trim().toLowerCase() === leg.to.trim().toLowerCase()
+        const gap = previousLeg
+          ? Math.floor((Date.parse(leg.departureAt) - Date.parse(previousLeg.arrivalAt)) / 60_000)
+          : 0
+        const hasServiceNotices = noticeCount > 0
+        const serviceDetails = (
+          <>
+            {leg.notices?.map((notice) => (
+              <p
+                className={`route-step-notice route-step-notice--${notice.kind}`}
+                key={`${notice.kind}-${notice.text}`}
+                role="note"
+              >
+                <strong>
+                  {notice.kind === 'planned_work' ? 'Planned work' : 'Service notice'}
+                </strong>{' '}
+                {notice.text}
+              </p>
+            ))}
+            <div className="route-step-times">
+              <div className="route-step-timing">
+                <span className="route-step-time-label">Expected journey</span>
+                <span className="route-step-time-value">
+                  <span>
+                    <strong>Leave</strong>{' '}
+                    <time dateTime={leg.departureAt}>{formatTime(leg.departureAt)}</time>
+                  </span>
+                  <span aria-hidden="true">·</span>
+                  <span>
+                    <strong>Arrive</strong>{' '}
+                    <time dateTime={leg.arrivalAt}>{formatTime(leg.arrivalAt)}</time>
+                  </span>
+                </span>
+                <small className="route-step-time-note">
+                  {formatTimingDate(leg.departureAt, leg.arrivalAt)} · TfL Journey Planner estimate
+                </small>
+              </div>
+              {hasScheduledTiming && !scheduleMatchesItinerary && (
+                <div className="route-step-timing route-step-timing--schedule">
+                  <span className="route-step-time-label">Published schedule</span>
+                  <span className="route-step-time-value">
+                    <span>
+                      <strong>Scheduled</strong>{' '}
+                      {leg.scheduledDepartureAt ? (
+                        <time dateTime={leg.scheduledDepartureAt}>
+                          {formatTime(leg.scheduledDepartureAt)}
+                        </time>
+                      ) : (
+                        'departure not supplied'
+                      )}
+                    </span>
+                    <span aria-hidden="true">·</span>
+                    <span>
+                      {leg.scheduledArrivalAt ? (
+                        <time dateTime={leg.scheduledArrivalAt}>
+                          {formatTime(leg.scheduledArrivalAt)}
+                        </time>
+                      ) : (
+                        'arrival not supplied'
+                      )}
+                    </span>
+                  </span>
+                  <small className="route-step-time-note">
+                    {leg.scheduledDepartureAt && leg.scheduledArrivalAt
+                      ? `${formatTimingDate(leg.scheduledDepartureAt, leg.scheduledArrivalAt)} · provider timing, not a live update`
+                      : 'The provider supplied only part of the schedule.'}
+                  </small>
+                </div>
+              )}
+              {hasScheduledTiming && scheduleMatchesItinerary && (
+                <small className="route-step-time-note route-step-time-note--schedule">
+                  {formatTimingDate(leg.scheduledDepartureAt!, leg.scheduledArrivalAt!)} · provider
+                  schedule matches this plan; not a live update
+                </small>
+              )}
+            </div>
+          </>
+        )
+        return (
+          <Fragment key={`${leg.departureAt}-${leg.arrivalAt}-${leg.from}`}>
+            {routeChange && (
+              <li
+                id={`${idPrefix}route-change-${index}`}
+                tabIndex={-1}
+                className={`route-flow__change route-flow__change--${routeChange.kind}`}
+                style={{ '--route-line-color': lineColor } as CSSProperties}
+              >
+                <div className="route-flow__change-marker" aria-hidden="true">
+                  <ArrowsDownUp size={22} weight="bold" />
+                </div>
+                <div className="route-flow__change-detail">
+                  <strong>{routeChange.title}</strong>
+                  <p>{routeChange.description}</p>
+                  {gap > 0 && (
+                    <p>
+                      {minutes(gap)} allowed between these legs in the plan (transfer or waiting).
                     </p>
-                  ))}
-                  <div className="route-step-times">
-                    <div className="route-step-timing">
-                      <span className="route-step-time-label">Expected journey</span>
-                      <span className="route-step-time-value">
-                        <span>
-                          <strong>Leave</strong>{' '}
-                          <time dateTime={leg.departureAt}>{formatTime(leg.departureAt)}</time>
-                        </span>
-                        <span aria-hidden="true">·</span>
-                        <span>
-                          <strong>Arrive</strong>{' '}
-                          <time dateTime={leg.arrivalAt}>{formatTime(leg.arrivalAt)}</time>
-                        </span>
-                      </span>
-                      <small className="route-step-time-note">
-                        {formatTimingDate(leg.departureAt, leg.arrivalAt)} · TfL Journey Planner
-                        estimate
-                      </small>
-                    </div>
-                    {hasScheduledTiming && !scheduleMatchesItinerary && (
-                      <div className="route-step-timing route-step-timing--schedule">
-                        <span className="route-step-time-label">Published schedule</span>
-                        <span className="route-step-time-value">
-                          <span>
-                            <strong>Scheduled</strong>{' '}
-                            {leg.scheduledDepartureAt ? (
-                              <time dateTime={leg.scheduledDepartureAt}>
-                                {formatTime(leg.scheduledDepartureAt)}
-                              </time>
-                            ) : (
-                              'departure not supplied'
-                            )}
-                          </span>
-                          <span aria-hidden="true">·</span>
-                          <span>
-                            {leg.scheduledArrivalAt ? (
-                              <time dateTime={leg.scheduledArrivalAt}>
-                                {formatTime(leg.scheduledArrivalAt)}
-                              </time>
-                            ) : (
-                              'arrival not supplied'
-                            )}
-                          </span>
-                        </span>
-                        <small className="route-step-time-note">
-                          {leg.scheduledDepartureAt && leg.scheduledArrivalAt
-                            ? `${formatTimingDate(leg.scheduledDepartureAt, leg.scheduledArrivalAt)} · provider timing, not a live update`
-                            : 'The provider supplied only part of the schedule.'}
-                        </small>
-                      </div>
-                    )}
-                    {hasScheduledTiming && scheduleMatchesItinerary && (
-                      <small className="route-step-time-note route-step-time-note--schedule">
-                        {formatTimingDate(leg.scheduledDepartureAt!, leg.scheduledArrivalAt!)} ·
-                        provider schedule matches this plan; not a live update
-                      </small>
+                  )}
+                  {routeChange.nextDirection && (
+                    <p className="route-change-next">
+                      <span>Next train</span> {routeChange.nextDirection}
+                    </p>
+                  )}
+                </div>
+              </li>
+            )}
+            <li
+              id={`${idPrefix}route-leg-${index}`}
+              tabIndex={-1}
+              className={`route-flow__step route-flow__step--${displayMode}`}
+              style={{ '--route-line-color': lineColor } as CSSProperties}
+            >
+              <div className="route-flow__visual" aria-hidden="true">
+                <span className="route-flow__icon">
+                  <RouteLegIcon mode={leg.mode} lineName={leg.lineName} />
+                </span>
+                {index < route.legs.length - 1 && <span className="route-flow__connector" />}
+              </div>
+              <div className="route-flow__detail">
+                <div className="route-step-heading">
+                  <div className="route-step-mode">
+                    <strong>{formatRouteService(leg.mode, leg.lineName)}</strong>
+                    {displayMode === 'tube' && leg.lineName && (
+                      <span
+                        className="route-line-key"
+                        role="img"
+                        aria-label={`${formatLineName(leg.lineName)} colour`}
+                      />
                     )}
                   </div>
-                </>
-              )
-              return (
-                <Fragment key={`${leg.departureAt}-${leg.arrivalAt}-${leg.from}`}>
-                  {routeChange && (
-                    <li
-                      id={`${idPrefix}route-change-${index}`}
-                      tabIndex={-1}
-                      className={`route-flow__change route-flow__change--${routeChange.kind}`}
-                      style={{ '--route-line-color': lineColor } as CSSProperties}
-                    >
-                      <div className="route-flow__change-marker" aria-hidden="true">
-                        <ArrowsDownUp size={22} weight="bold" />
-                      </div>
-                      <div className="route-flow__change-detail">
-                        <strong>{routeChange.title}</strong>
-                        <p>{routeChange.description}</p>
-                        {gap > 0 && (
-                          <p>
-                            {minutes(gap)} allowed between these legs in the plan (transfer or
-                            waiting).
-                          </p>
-                        )}
-                        {routeChange.nextDirection && (
-                          <p className="route-change-next">
-                            <span>Next train</span> {routeChange.nextDirection}
-                          </p>
-                        )}
-                      </div>
-                    </li>
+                  <span>
+                    {minutes(leg.durationMinutes)}
+                    {displayMode === 'tube' && leg.stopCount !== undefined
+                      ? ` · ${leg.stopCount} ${leg.stopCount === 1 ? 'stop' : 'stops'}`
+                      : ''}
+                  </span>
+                </div>
+                <p>
+                  {accessWalk ? (
+                    `${minutes(leg.durationMinutes)} walking/access at ${shortStation(leg.from)}. Supplied by TfL`
+                  ) : (
+                    <>
+                      {shortStation(leg.from)} <span aria-hidden="true">→</span>{' '}
+                      {shortStation(leg.to)}
+                    </>
                   )}
-                  <li
-                    id={`${idPrefix}route-leg-${index}`}
-                    tabIndex={-1}
-                    className={`route-flow__step route-flow__step--${displayMode}`}
-                    style={{ '--route-line-color': lineColor } as CSSProperties}
-                  >
-                    <div className="route-flow__visual" aria-hidden="true">
-                      <span className="route-flow__icon">
-                        <RouteLegIcon mode={leg.mode} lineName={leg.lineName} />
-                      </span>
-                      {index < route.legs.length - 1 && <span className="route-flow__connector" />}
-                    </div>
-                    <div className="route-flow__detail">
-                      <div className="route-step-heading">
-                        <div className="route-step-mode">
-                          <strong>{formatRouteService(leg.mode, leg.lineName)}</strong>
-                          {displayMode === 'tube' && leg.lineName && (
-                            <span
-                              className="route-line-key"
-                              role="img"
-                              aria-label={`${formatLineName(leg.lineName)} colour`}
-                            />
-                          )}
-                        </div>
-                        <span>
-                          {minutes(leg.durationMinutes)}
-                          {displayMode === 'tube' && leg.stopCount !== undefined
-                            ? ` · ${leg.stopCount} ${leg.stopCount === 1 ? 'stop' : 'stops'}`
-                            : ''}
-                        </span>
-                      </div>
-                      <p>
-                        {accessWalk ? (
-                          `${minutes(leg.durationMinutes)} walking/access at ${shortStation(leg.from)}. Supplied by TfL`
-                        ) : (
-                          <>
-                            {shortStation(leg.from)} <span aria-hidden="true">→</span>{' '}
-                            {shortStation(leg.to)}
-                          </>
-                        )}
+                </p>
+                {!routeChange && gap > 0 && (
+                  <p className="route-timing-note">
+                    {minutes(gap)} allowed between these legs (transfer or waiting).
+                  </p>
+                )}
+                {displayMode !== 'walk' && directionText && (
+                  <p className="route-step-direction">
+                    <span className="route-step-direction__label">Direction</span>
+                    <strong className="route-step-direction__value">{directionText}</strong>
+                  </p>
+                )}
+                {displayMode !== 'walk' && !directionText && instructionText && (
+                  <p className="route-step-instruction">
+                    <span>Instruction</span> {instructionText}
+                  </p>
+                )}
+                {displayMode === 'tube' && leg.lineName && leg.stopCount !== undefined && (
+                  <TubeStationSequence
+                    lineName={leg.lineName}
+                    from={leg.from}
+                    to={leg.to}
+                    stopCount={leg.stopCount}
+                    intermediateStops={leg.intermediateStops}
+                  />
+                )}
+                {displayMode !== 'walk' ? (
+                  <>
+                    {hasServiceNotices && (
+                      <p className="essential-notice" role="note">
+                        <strong>Before you travel: </strong>
+                        {leg.notices!.map((notice) => notice.text).join(' ')}
                       </p>
-                      {!routeChange && gap > 0 && (
-                        <p className="route-timing-note">
-                          {minutes(gap)} allowed between these legs (transfer or waiting).
-                        </p>
-                      )}
-                      {displayMode !== 'walk' && directionText && (
-                        <p className="route-step-direction">
-                          <span className="route-step-direction__label">Direction</span>
-                          <strong className="route-step-direction__value">{directionText}</strong>
-                        </p>
-                      )}
-                      {displayMode !== 'walk' && !directionText && instructionText && (
-                        <p className="route-step-instruction">
-                          <span>Instruction</span> {instructionText}
-                        </p>
-                      )}
-                      {displayMode === 'tube' && leg.lineName && leg.stopCount !== undefined && (
-                        <TubeStationSequence
-                          lineName={leg.lineName}
-                          from={leg.from}
-                          to={leg.to}
-                          stopCount={leg.stopCount}
-                          intermediateStops={leg.intermediateStops}
-                        />
-                      )}
-                      {displayMode !== 'walk' ? (
-                        <>
-                          {hasServiceNotices && (
-                            <p className="essential-notice" role="note">
-                              <strong>Before you travel: </strong>
-                              {leg.notices!.map((notice) => notice.text).join(' ')}
-                            </p>
-                          )}
-                          <details
-                            className={`route-step-details${
-                              hasServiceNotices ? ' route-step-details--has-notices' : ''
-                            }`}
-                          >
-                            <summary>
-                              <span className="route-disclosure-chevron" aria-hidden="true" />
-                              <span>
-                                {hasServiceNotices ? 'View service details' : 'View timing details'}
-                              </span>
-                              <span className="route-step-details__hint">
-                                {hasServiceNotices
-                                  ? `${noticeCount} notice${noticeCount === 1 ? '' : 's'} · expected times`
-                                  : 'Expected times & published schedule'}
-                              </span>
-                            </summary>
-                            <div className="route-step-details__content">{serviceDetails}</div>
-                          </details>
-                        </>
-                      ) : (
-                        serviceDetails
-                      )}
-                      {showStationInstructions && (
-                        <details className="route-step-instructions">
-                          <summary>
-                            <span className="route-disclosure-chevron" aria-hidden="true" />
-                            <span>Show station instructions</span>
-                          </summary>
-                          <div className="route-step-instructions__content">
-                            {leg.instructions?.summary && (
-                              <strong>{leg.instructions.summary}</strong>
-                            )}
-                            {leg.instructions?.detailed &&
-                              leg.instructions.detailed !== leg.instructions.summary && (
-                                <p>{leg.instructions.detailed}</p>
-                              )}
-                            {leg.instructions?.steps && (
-                              <WalkingInstructionSteps steps={leg.instructions.steps} />
-                            )}
-                          </div>
-                        </details>
+                    )}
+                    <details
+                      className={`route-step-details${
+                        hasServiceNotices ? ' route-step-details--has-notices' : ''
+                      }`}
+                    >
+                      <summary>
+                        <span className="route-disclosure-chevron" aria-hidden="true" />
+                        <span>
+                          {hasServiceNotices ? 'View service details' : 'View timing details'}
+                        </span>
+                        <span className="route-step-details__hint">
+                          {hasServiceNotices
+                            ? `${noticeCount} notice${noticeCount === 1 ? '' : 's'} · expected times`
+                            : 'Expected times & published schedule'}
+                        </span>
+                      </summary>
+                      <div className="route-step-details__content">{serviceDetails}</div>
+                    </details>
+                  </>
+                ) : (
+                  serviceDetails
+                )}
+                {showStationInstructions && (
+                  <details className="route-step-instructions">
+                    <summary>
+                      <span className="route-disclosure-chevron" aria-hidden="true" />
+                      <span>Show station instructions</span>
+                    </summary>
+                    <div className="route-step-instructions__content">
+                      {leg.instructions?.summary && <strong>{leg.instructions.summary}</strong>}
+                      {leg.instructions?.detailed &&
+                        leg.instructions.detailed !== leg.instructions.summary && (
+                          <p>{leg.instructions.detailed}</p>
+                        )}
+                      {leg.instructions?.steps && (
+                        <WalkingInstructionSteps steps={leg.instructions.steps} />
                       )}
                     </div>
-                  </li>
-                </Fragment>
-              )
-            })}
-          </ol>
+                  </details>
+                )}
+              </div>
+            </li>
+          </Fragment>
+        )
+      })}
+    </ol>
   )
 }
 

@@ -65,6 +65,16 @@ const input = {
   safetyBufferMinutes: '5',
 }
 const unrelatedDraft = { ...input, originName: 'Paddington', arriveBy: '2030-09-11T21:00' }
+const leaveNowInput = { ...input, timeMode: 'leave_now', arriveBy: '' }
+assert.equal(validateJourneyInput(leaveNowInput), null)
+assert.equal(sameJourneyInput(leaveNowInput, input), false)
+const nowResponse = { ...response, planningMode: 'leave_now', deadline: null, departureAt: response.checkedAt, safetyBufferMinutes: 5 }
+const nowJourney = { id: 'leave-now', savedAt: response.checkedAt, input: leaveNowInput, response: nowResponse }
+const nowLibrary = rememberJourney(emptyLibrary(), nowJourney)
+assert.equal(isJourneyLibrary(nowLibrary), true)
+const nowStore = { getItem: () => JSON.stringify(nowLibrary), setItem() {}, removeItem() {} }
+assert.equal(loadJourneyLibrary(nowStore).library.journeys[0].input.timeMode, 'leave_now')
+assert.equal(loadJourneyLibrary(nowStore).library.journeys[0].input.arriveBy, '')
 assert.equal(
   draftAfterCheck(unrelatedDraft, input, 'saved'),
   unrelatedDraft,

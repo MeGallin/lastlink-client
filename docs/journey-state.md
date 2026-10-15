@@ -1,7 +1,7 @@
 # Journey state and recovery
 
 The UI keeps three distinct concepts: the editable search draft, the displayed
-result (with its own endpoints/deadline/check time), and an explicitly started
+result (with its own endpoints/search mode/optional deadline/check time), and an explicitly started
 journey. Editing or failing a search never changes the started itinerary.
 
 ## Device-local library
@@ -31,6 +31,22 @@ Storage events reconcile library changes from other tabs without replacing an
 open itinerary with new transport evidence.
 
 ## Checks and time
+
+Fresh and return drafts default to Leave now with a five-minute safety margin.
+The optional deadline controls start blank and their shortcuts apply only when
+selected. Leave now serializes `leaveNow: true` without an arrival deadline;
+the API supplies the departure instant and searches TfL Departing. This result
+has `planningMode: leave_now`, null deadline/margin and shows Route found,
+arrival and arrival plus allowance. It does not claim spare time. Existing
+deadline snapshots retain their absolute instant and assessment semantics.
+Both modes persist in the same versioned library; legacy snapshots remain valid.
+
+Successful checks close the planner and show results with Edit search/New
+journey actions. Editing shows the populated form and hides the previous answer.
+Reviewing a stale Leave now plan focuses its origin; a deadline plan focuses
+its deadline. View your route opens the reused dialog directly in the assessment.
+While following, controls and the full route stack in one column; View current
+step scrolls to the selected leg including the preceding interchange context.
 
 One request gate invalidates older work on edits, navigation or saved recall;
 abort is an optimisation, and a revision check also rejects late responses.

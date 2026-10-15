@@ -18,6 +18,7 @@ export async function requestJourneyCheck(
     destination: StationOption
     origin: JourneyLocation
     arriveBy: string
+    timeMode?: 'leave_now' | 'arrive_by'
     arriveByAtMs?: number
     safetyBufferMinutes: number
   },
@@ -40,7 +41,9 @@ export async function requestJourneyCheck(
           name: input.destination.name,
           tflStopPointId: input.destination.id,
         },
-        arriveBy: toDeadlineIso(input.arriveBy, input.arriveByAtMs),
+        ...(input.timeMode === 'leave_now'
+          ? { leaveNow: true }
+          : { arriveBy: toDeadlineIso(input.arriveBy, input.arriveByAtMs) }),
         safetyBufferMinutes: input.safetyBufferMinutes,
       }),
     })

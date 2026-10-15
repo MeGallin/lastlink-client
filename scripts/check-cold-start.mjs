@@ -125,6 +125,18 @@ try {
   assert.equal(requestSignal.aborted, false);
   externalListener?.();
   assert.equal(requestSignal.aborted, false);
+  let submitted;
+  globalThis.fetch = (_url, options) => {
+    submitted = JSON.parse(options.body);
+    return Promise.resolve(new Response(JSON.stringify({ error: { message: 'capture only' } }), { status: 500 }));
+  };
+  await assert.rejects(requestJourneyCheck({ ...input, timeMode: 'leave_now', arriveBy: '' }), /capture only/);
+  assert.equal(submitted.leaveNow, true);
+  assert.equal('arriveBy' in submitted, false);
+  assert.equal(submitted.safetyBufferMinutes, 5);
+  await assert.rejects(requestJourneyCheck(input), /capture only/);
+  assert.equal('leaveNow' in submitted, false);
+  assert.ok(submitted.arriveBy);
 
   console.log("Cold-start timing and cleanup checks passed");
 } finally {

@@ -1,6 +1,10 @@
 export type JourneyFocusIntent = 'page' | 'form' | 'result'
 
-/** Editing can remain true after a check; only an explicit form intent targets it. */
+export function savedJourneyReviewField(input: { timeMode?: 'leave_now' | 'arrive_by' }) {
+  return input.timeMode === 'leave_now' ? 'origin' : 'arriveBy'
+}
+
+/** Explicit edit actions target the planner; checked results target their answer. */
 export function journeyFocusTarget(
   intent: JourneyFocusIntent,
   editing: boolean,

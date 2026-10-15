@@ -3,11 +3,7 @@ import type { JourneyResponse } from '../types/journey.ts'
 export function isJourneyResponse(value: unknown): value is JourneyResponse {
   if (!isRecord(value)) return false
   if (value.contractVersion !== 'journey-check.v0.2') return false
-  if (
-    !['viable', 'tight', 'not_viable', 'unable_to_verify'].includes(
-      value.status as string,
-    )
-  ) {
+  if (!['viable', 'tight', 'not_viable', 'unable_to_verify'].includes(value.status as string)) {
     return false
   }
   if (!['fixture', 'live', 'cache'].includes(value.dataMode as string)) return false
@@ -21,7 +17,22 @@ export function isJourneyResponse(value: unknown): value is JourneyResponse {
   ) {
     return false
   }
-  if (!isRecord(value.deadline) || !isDateString(value.deadline.arriveBy)) return false
+  if (value.planningMode === 'leave_now') {
+    if (
+      value.deadline !== null ||
+      value.margin !== null ||
+      !isDateString(value.departureAt) ||
+      !Number.isInteger(value.safetyBufferMinutes) ||
+      Number(value.safetyBufferMinutes) < 0 ||
+      Number(value.safetyBufferMinutes) > 60
+    )
+      return false
+  } else if (
+    value.planningMode !== undefined ||
+    !isRecord(value.deadline) ||
+    !isDateString(value.deadline.arriveBy)
+  )
+    return false
   if (!Array.isArray(value.evidence) || !Array.isArray(value.warnings)) return false
   if (!Array.isArray(value.reasons) || !value.reasons.every(isReason)) return false
   if (!value.evidence.every(isEvidenceItem)) return false
@@ -44,19 +55,12 @@ function isEvidenceItem(value: unknown) {
 }
 
 function isReason(value: unknown) {
-  return (
-    isRecord(value) &&
-    typeof value.code === 'string' &&
-    typeof value.message === 'string'
-  )
+  return isRecord(value) && typeof value.code === 'string' && typeof value.message === 'string'
 }
 
 function isRoute(value: unknown) {
   if (!isRecord(value) || !isDateString(value.arrivalAt)) return false
-  if (
-    value.walkingMinutes !== undefined &&
-    !isFiniteNonNegativeNumber(value.walkingMinutes)
-  ) {
+  if (value.walkingMinutes !== undefined && !isFiniteNonNegativeNumber(value.walkingMinutes)) {
     return false
   }
   if (value.fareWarning !== undefined && !isNonEmptyText(value.fareWarning)) {
@@ -92,11 +96,7 @@ function isRouteLeg(value: unknown) {
   )
 }
 
-function isOptionalStationSequence(
-  mode: unknown,
-  stopCount: unknown,
-  intermediateStops: unknown,
-) {
+function isOptionalStationSequence(mode: unknown, stopCount: unknown, intermediateStops: unknown) {
   if (stopCount === undefined && intermediateStops === undefined) return true
   if (mode !== 'tube' || !isPositiveInteger(stopCount)) return false
   if (intermediateStops === undefined) return stopCount === 1
@@ -112,9 +112,7 @@ function isOptionalStationSequence(
 
 function isStationSequenceStop(value: unknown) {
   return (
-    isRecord(value) &&
-    isNonEmptyText(value.name) &&
-    isOptionalStopPointId(value.tflStopPointId)
+    isRecord(value) && isNonEmptyText(value.name) && isOptionalStopPointId(value.tflStopPointId)
   )
 }
 
@@ -159,10 +157,7 @@ function isOptionalInstructions(value: unknown) {
 }
 
 function isOptionalNotices(value: unknown) {
-  return (
-    value === undefined ||
-    (Array.isArray(value) && value.length > 0 && value.every(isNotice))
-  )
+  return value === undefined || (Array.isArray(value) && value.length > 0 && value.every(isNotice))
 }
 
 function isNotice(value: unknown) {
@@ -177,8 +172,7 @@ function isNotice(value: unknown) {
 
 function isOptionalAlternatives(value: unknown) {
   return (
-    value === undefined ||
-    (Array.isArray(value) && value.length > 0 && value.every(isAlternative))
+    value === undefined || (Array.isArray(value) && value.length > 0 && value.every(isAlternative))
   )
 }
 
@@ -191,9 +185,9 @@ function isAlternative(value: unknown) {
     isDateString(value.arrivalAt) &&
     Date.parse(value.arrivalAt) >= Date.parse(value.departureAt) &&
     isFiniteNonNegativeNumber(value.durationMinutes) &&
-    (value.walkingMinutes === undefined ||
-      isFiniteNonNegativeNumber(value.walkingMinutes)) &&
-    isFiniteNumber(value.remainingAfterBufferMinutes) &&
+    (value.walkingMinutes === undefined || isFiniteNonNegativeNumber(value.walkingMinutes)) &&
+    (value.remainingAfterBufferMinutes === null ||
+      isFiniteNumber(value.remainingAfterBufferMinutes)) &&
     Array.isArray(value.segments) &&
     value.segments.length > 0 &&
     value.segments.every(isAlternativeSegment)
@@ -226,7 +220,10 @@ function isMargin(value: unknown) {
 
 function isDateString(value: unknown) {
   if (typeof value !== 'string') return false
-  const match = /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/.exec(value)
+  const match =
+    /^(\d{4})-(\d{2})-(\d{2})T\d{2}:\d{2}(?::\d{2}(?:\.\d{1,3})?)?(?:Z|[+-]\d{2}:\d{2})$/.exec(
+      value,
+    )
   if (match === null) return false
   const year = Number(match[1])
   const month = Number(match[2])
@@ -238,20 +235,7 @@ function isDateString(value: unknown) {
 function isCalendarDate(year: number, month: number, day: number) {
   if (month < 1 || month > 12 || day < 1) return false
   const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
-  const daysInMonth = [
-    31,
-    leapYear ? 29 : 28,
-    31,
-    30,
-    31,
-    30,
-    31,
-    31,
-    30,
-    31,
-    30,
-    31,
-  ][month - 1]
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31][month - 1]
   return daysInMonth !== undefined && day <= daysInMonth
 }
 

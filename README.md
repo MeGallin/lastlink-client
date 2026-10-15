@@ -12,10 +12,18 @@ recovery and context:
 
 1. choose a starting Tube station from the 272-station TfL-derived catalogue;
 2. choose a destination station from the same catalogue;
-3. choose a future arrival deadline and safety margin (the form offers quick future choices and
-   prevents past times);
+3. leave now with the default five-minute safety margin, or explicitly open the
+   optional arrival controls and choose a future deadline;
 4. submit the request to `POST /api/v1/journey-check`;
-5. read the viability, route legs, margin, freshness and next action.
+5. read the route, estimated arrival and allowance; with a deadline, also read
+   whether the route meets your margin. View your route opens the shared diagram
+   directly below the timing figures in the assessment.
+
+Leave now sends `leaveNow: true` without an arrival deadline. Quick choices are
+absent until the optional deadline controls are opened; no time is preselected.
+A Leave now answer says **Route found**, not Enough time: the allowance adds to
+the arrival estimate and does not claim spare time against an unspecified deadline.
+Deploy the updated API before the client using this mode.
 
 The top navigation keeps the journey screen focused while making two supporting
 pages easy to reach:
@@ -23,7 +31,8 @@ pages easy to reach:
 - **Saved journeys** shows up to three device-local plans. Starting a journey
   protects it, leaving two slots for recent checks. Opening a plan does not start it;
   **Plan return journey** reverses a saved plan into a new editable check with a
-  new `Arrive back by` deadline, while leaving the outbound snapshot unchanged;
+  default Leave now search and an optional `Arrive back by` deadline, while
+  leaving the outbound snapshot unchanged;
 - **About** explains the answer states, Tube and walking route evidence, saved-route
   behaviour, return planning, active-journey recovery and the limits of a
   station-arrival check.
@@ -62,10 +71,11 @@ The traveller explicitly selects their current leg, can explore another journey,
 and returns using **Resume journey**. This compact entry sits in the page flow,
 so it cannot cover planning fields, suggestions or saved-card actions. While following
 a journey, the current step is the primary view; the original assessment is under
-**Plan details**, and **View current step** opens the unchanged route diagram.
+**Plan details**, and **View current step** scrolls to the selected leg in the
+full route below the controls. The controls and route stack at full page width.
 An expired deadline is reviewed rather
 than automatically moved forward. The UI labels each retained result with its
-own route, deadline and check time; failed checks cannot masquerade as that result.
+own route, search mode/optional deadline and check time; failed checks cannot masquerade as that result.
 
 The Journey page opens a **How to use lastlink** guide the first time it is
 visited in a browser. It can be reopened from the link above the form. Three quick
@@ -75,8 +85,9 @@ published timings, saved-plan recovery, active-journey controls, return planning
 fresh checks and the three-plan device-local limit described on the About page.
 
 Saved cards explain their own freshness. **Resume journey** is the protected
-plan's primary action. **Review and recheck** opens an old plan's deadline for
-explicit review without changing that time or issuing a request. Return planning
+plan's primary action. **Review and recheck** opens an old plan's populated
+planner without issuing a request: Leave now focuses the starting station,
+while a deadline plan focuses its original deadline for explicit review. Return planning
 remains a separate secondary action. All modal surfaces share native dialog
 semantics, scroll locking and focus return through `useDialogSurface`.
 

@@ -43,7 +43,7 @@ try {
   const { StationCombobox } = await server.ssrLoadModule(
     "/src/components/StationCombobox.tsx",
   );
-  const { journeyFocusTarget } = await server.ssrLoadModule(
+  const { journeyFocusTarget, savedJourneyReviewField } = await server.ssrLoadModule(
     "/src/journeys/journey-focus.ts",
   );
   assert.equal(journeyFocusTarget("result", true, true, false), "answer",
@@ -54,6 +54,9 @@ try {
     "A deliberate new journey focuses its requested field");
   assert.equal(journeyFocusTarget("result", false, true, true), "current");
   assert.equal(journeyFocusTarget("page", true, false, false), "page");
+  assert.equal(savedJourneyReviewField({ timeMode: "leave_now" }), "origin");
+  assert.equal(savedJourneyReviewField({ timeMode: "arrive_by" }), "arriveBy");
+  assert.equal(savedJourneyReviewField({}), "arriveBy", "Legacy deadline plans retain deadline focus");
 
   const aboutHtml = renderToStaticMarkup(createElement(AboutView));
   const aboutText = visibleText(aboutHtml);
@@ -185,7 +188,7 @@ try {
   assert.match(staleHtml, /saved-route__freshness-badge/);
   assert.match(staleHtml, /Needs fresh check/);
   assert.match(staleHtml, /Review and recheck/);
-  assert.match(staleHtml, /Review the deadline before checking again/);
+  assert.match(staleHtml, /Review the search before checking again/);
   assert.doesNotMatch(staleHtml, /Resume journey/);
 
   const emptyHtml = renderToStaticMarkup(
@@ -229,10 +232,10 @@ try {
       route: { arrivalAt: baseLeg.arrivalAt, legs: [baseLeg] },
     },
   };
-  const splitJourneyView = renderToStaticMarkup(
+  const resultJourneyView = renderToStaticMarkup(
     createElement(JourneyView, {
       workspace: {
-        editing: true,
+        editing: false,
         shown: sampleJourney,
         draft: sampleInput,
         draftDeadlineAtMs: Date.parse(sampleInput.arriveBy),
@@ -250,10 +253,12 @@ try {
       onStartNew: () => {},
     }),
   );
-  assert.match(splitJourneyView, /class="journey-layout journey-layout--split"/);
-  assert.match(splitJourneyView, /Plan a journey/);
-  assert.match(splitJourneyView, /journey-layout__planner/);
-  assert.match(splitJourneyView, /journey-layout__result/);
+  assert.match(resultJourneyView, /class="journey-layout journey-layout--result-only"/);
+  assert.match(resultJourneyView, /Your journey/);
+  assert.match(resultJourneyView, /Edit search/);
+  assert.match(resultJourneyView, /New journey/);
+  assert.doesNotMatch(resultJourneyView, /journey-layout__planner|id="origin"/);
+  assert.ok(resultJourneyView.indexOf('aria-label="Journey summary"') < resultJourneyView.indexOf('id="answer-title"'));
   const answerWithNotice = renderToStaticMarkup(
     createElement(JourneyAnswer, {
       response: sampleJourney.response,
@@ -266,8 +271,7 @@ try {
   );
   assert.match(answerWithNotice, /--decision-accent:\s*#000000/);
   assert.match(answerWithNotice, /--route-accent:\s*#000000/);
-  const routeDialogIndex = answerWithNotice.indexOf("<dialog");
-  assert.ok(visibleNoticeIndex >= 0 && visibleNoticeIndex < routeDialogIndex);
+  assert.ok(visibleNoticeIndex >= 0 && visibleNoticeIndex < answerWithNotice.indexOf("Follow this route"));
   for (const message of [
     "The journey service took too long to respond. It may still be waking up. Please try again.",
     "The journey service could not be reached. It may be waking up. Please try again in a moment.",
@@ -297,7 +301,7 @@ try {
     );
     assert.match(view, /role="alert"/);
     assert.match(view, /Your previous plan, Waterloo.*Stratford, is unchanged/);
-    assert.match(view, /Start a new journey/);
+    assert.match(view, /New journey/);
   }
   const waitingView = renderToStaticMarkup(
     createElement(JourneyView, {
@@ -330,6 +334,28 @@ try {
   assert.match(changedDraftError, /Your previous plan, Waterloo.*Stratford, is unchanged\./);
   assert.match(changedDraftError, /Your previous result is hidden while you edit this search/);
   assert.doesNotMatch(changedDraftError, /unchanged below|id="answer-title"/);
+  const unchangedDraftView = renderToStaticMarkup(createElement(JourneyView, {
+    workspace: {
+      editing: true, shown: sampleJourney, draft: sampleInput, error: null,
+      pending: null, active: null, library: { active: null },
+    },
+    answerRef: { current: null }, onStart() {}, onEnd() {}, onExplore() {}, onStartNew() {},
+  }));
+  assert.match(unchangedDraftView, /id="origin"/);
+  assert.match(unchangedDraftView, /journey-layout--form-only/);
+  assert.doesNotMatch(unchangedDraftView, /id="answer-title"|Journey summary/);
+  assert.match(unchangedDraftView, new RegExp(`id="${savedJourneyReviewField(sampleInput)}"`));
+  const leaveNowReviewInput = { ...sampleInput, timeMode: "leave_now", arriveBy: "" };
+  const leaveNowReview = renderToStaticMarkup(createElement(JourneyView, {
+    workspace: {
+      editing: true, shown: { ...sampleJourney, input: leaveNowReviewInput,
+        response: { ...sampleJourney.response, planningMode: "leave_now", deadline: null, safetyBufferMinutes: 5, departureAt: sampleJourney.response.checkedAt } },
+      draft: leaveNowReviewInput, error: null, pending: null, active: null, library: { active: null },
+    },
+    answerRef: { current: null }, onStart() {}, onEnd() {}, onExplore() {}, onStartNew() {},
+  }));
+  assert.match(leaveNowReview, new RegExp(`id="${savedJourneyReviewField(leaveNowReviewInput)}"`));
+  assert.doesNotMatch(leaveNowReview, /id="arriveBy"/);
   const activeView = renderToStaticMarkup(createElement(JourneyView, {
     workspace: {
       editing: false, shown: sampleJourney, draft: sampleInput, error: null,
@@ -340,7 +366,7 @@ try {
   }));
   assert.match(activeView, /<details class="protected-plan-details"><summary>Plan details/);
   assert.ok(activeView.indexOf('id="current-journey"') < activeView.indexOf('class="protected-plan-details"'));
-  assert.ok(activeView.indexOf('class="protected-plan-details"') < activeView.indexOf('class="new-journey-prompt"'));
+  assert.match(activeView, /New journey/);
   assert.match(activeView, /View current step/);
   assert.match(activeView, /Your full route/);
   assert.match(activeView, /id="current-route-leg-0"/);
@@ -437,9 +463,8 @@ try {
     "utf8",
   );
   assert.match(journeySource, /Plan a journey/);
-  assert.match(journeySource, /Current search/);
+  assert.match(journeySource, /Journey summary/);
   assert.match(journeySource, /Edit search/);
-  assert.match(journeySource, /plannerVisibility\.focusVersion === w\.focusVersion/);
   assert.doesNotMatch(journeySource, /Late-night journey check/);
   assert.match(aboutSource, /station-arrival deadline/);
   assert.doesNotMatch(aboutSource, /late-night/i);
@@ -471,6 +496,8 @@ try {
   assert.match(workspaceSource, /defaultDeadlineRollingRef/);
   assert.match(workspaceSource, /setDraft\(\(current\) => draftAfterCheck\(current, snapshot.input, source\)\)\s+setFocusIntent\('result'\)/);
   assert.match(appSource, /journeyFocusTarget\(w.focusIntent, w.editing/);
+  assert.match(appSource, /const field = savedJourneyReviewField\(journey.input\)/);
+  assert.match(appSource, /document.getElementById\(field\)\?\.focus/);
   for (const name of ["planReturnJourney", "explore", "startNewJourney"]) {
     const body = workspaceSource.split(`function ${name}(`)[1]?.split(/\n  (?:async )?function /)[0];
     assert.match(body, /setFocusIntent\('form'\)/);
